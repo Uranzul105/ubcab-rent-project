@@ -24,3 +24,12 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.menu {
+  cursor: pointer;
+}
+
+.menu:hover {
+  color: #f59e0b;
+  transition: color 0.2s ease;
+}
