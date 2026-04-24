@@ -3,9 +3,16 @@
 import Image from "next/image";
 // import Language from "./Language";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Header() {
   const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    setRole(user.role || null);
+  }, []);
 
   return (
     <div
@@ -25,7 +32,7 @@ export default function Header() {
         border: "1px solid rgba(255,255,255,0.25)",
       }}
     >
-      {/* Logo — /logo.png болгов */}
+      {/* Logo */}
       <Image src="/logo.png" alt="logo" width={120} height={40} />
 
       {/* Menu */}
@@ -38,17 +45,26 @@ export default function Header() {
           cursor: "pointer",
         }}
       >
-        <span className="menu">Бидний тухай</span>
-        <span className="menu">Захиалгууд</span>
+        <span
+          className="menu"
+          onClick={() => window.open("https://ubcab.mn", "_blank")}
+        >
+          Бидний тухай
+        </span>
+        <span className="menu" onClick={() => router.push("/pages/orders")}>
+          Захиалгууд
+        </span>
         <span className="menu" onClick={() => router.push("/pages/drivers")}>
           Жолооч
         </span>
         <span className="menu" onClick={() => router.push("/pages/company")}>
           Байгууллага
         </span>
-        <span className="menu" onClick={() => router.push("/pages/report")}>
-          Тайлан
-        </span>
+        {role === "admin" && (
+          <span className="menu" onClick={() => router.push("/pages/report")}>
+            Тайлан
+          </span>
+        )}
       </div>
 
       <div>{/* <Language /> */}</div>

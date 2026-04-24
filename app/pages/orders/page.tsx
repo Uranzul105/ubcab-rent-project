@@ -6,6 +6,7 @@ import Typography from "@mui/joy/Typography";
 import Chip from "@mui/joy/Chip";
 import IconButton from "@mui/joy/IconButton";
 import Button from "@mui/joy/Button";
+import Input from "@mui/joy/Input";
 import Select from "@mui/joy/Select";
 import Option from "@mui/joy/Option";
 import Modal from "@mui/joy/Modal";
@@ -16,6 +17,7 @@ import OrderCard from "@/app/components/OrderCard";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   getOrders,
   createOrder,
@@ -40,7 +42,7 @@ function StatusBadge({ status }: { status: StatusKey }) {
       size="sm"
       variant="soft"
       color={s.color as any}
-      sx={{ fontWeight: 700, fontSize: "12px" }}
+      sx={{ fontWeight: 600, fontSize: "12px" }}
     >
       {s.label}
     </Chip>
@@ -52,6 +54,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [filterDate, setFilterDate] = useState("");
+  const [filterName, setFilterName] = useState("");
 
   useEffect(() => {
     getOrders()
@@ -59,32 +63,34 @@ export default function OrdersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Modal нээх — шинэ захиалга
+  // Шүүлт
+  const filteredOrders = orders.filter((o) => {
+    const matchDate = filterDate ? o.date === filterDate : true;
+    const matchName = filterName
+      ? o.customerName.toLowerCase().includes(filterName.toLowerCase())
+      : true;
+    return matchDate && matchName;
+  });
+
   const openCreate = () => {
     setEditOrder(null);
     setModalOpen(true);
   };
-
-  // Modal нээх — засах
   const openEdit = (order: Order) => {
     setEditOrder(order);
     setModalOpen(true);
   };
-
-  // Modal хаах
   const closeModal = () => {
     setModalOpen(false);
     setEditOrder(null);
   };
 
-  // Шинэ захиалга үүсгэх
   const handleAddOrder = async (order: any) => {
     const newOrder = await createOrder(order);
     setOrders((prev) => [newOrder, ...prev]);
     closeModal();
   };
 
-  // Захиалга засах
   const handleUpdateOrder = async (order: any) => {
     if (!editOrder) return;
     const updated = await updateOrder(String(editOrder._id), order);
@@ -94,7 +100,6 @@ export default function OrdersPage() {
     closeModal();
   };
 
-  // Төлөв солих
   const handleStatusChange = async (id: string, status: StatusKey) => {
     await updateOrder(id, { status });
     setOrders((prev) =>
@@ -102,7 +107,6 @@ export default function OrdersPage() {
     );
   };
 
-  // Устгах
   const handleDelete = async (id: string) => {
     if (!confirm("Устгах уу?")) return;
     await deleteOrder(id);
@@ -120,12 +124,10 @@ export default function OrdersPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Header */}
       <div style={{ position: "relative", zIndex: 10 }}>
         <Header />
       </div>
 
-      {/* Агуулга */}
       <Box sx={{ maxWidth: 960, margin: "0 auto", padding: "24px" }}>
         <Box
           sx={{
@@ -142,21 +144,20 @@ export default function OrdersPage() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mb: 2.5,
+              mb: 2,
             }}
           >
             <Typography
-              sx={{ fontSize: "24px", fontWeight: "bold", color: "#16181D" }}
+              sx={{ fontSize: "20px", fontWeight: 700, color: "#16181D" }}
             >
               Захиалгуудын жагсаалт
               <Typography
                 component="span"
-                sx={{ fontSize: "14px", fontWeight: 500, color: "#888", ml: 1 }}
+                sx={{ fontSize: "13px", fontWeight: 400, color: "#888", ml: 1 }}
               >
-                ({orders.length} захиалга)
+                ({filteredOrders.length} захиалга)
               </Typography>
             </Typography>
-
             <Button
               onClick={openCreate}
               startDecorator={<AddIcon />}
@@ -172,19 +173,49 @@ export default function OrdersPage() {
             </Button>
           </Box>
 
+          {/* Filter */}
+          <Box sx={{ display: "flex", gap: 1.5, mb: 2 }}>
+            <Input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              sx={{ fontSize: "13px", height: 38, width: 180 }}
+            />
+            <Input
+              placeholder="Захиалагчийн нэрээр хайх..."
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              startDecorator={<SearchIcon sx={{ color: "#aaa" }} />}
+              sx={{ fontSize: "13px", height: 38, flex: 1 }}
+            />
+            {(filterDate || filterName) && (
+              <Button
+                variant="outlined"
+                color="neutral"
+                onClick={() => {
+                  setFilterDate("");
+                  setFilterName("");
+                }}
+                sx={{ height: 38, borderRadius: "10px", fontSize: "13px" }}
+              >
+                Цэвэрлэх
+              </Button>
+            )}
+          </Box>
+
           {/* Жагсаалт */}
           {loading ? (
             <Box sx={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
               <Typography>Уншиж байна...</Typography>
             </Box>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <Box sx={{ textAlign: "center", padding: "48px", color: "#bbb" }}>
               <Typography sx={{ fontSize: "40px" }}>📋</Typography>
               <Typography>Захиалга байхгүй байна</Typography>
             </Box>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {orders.map((order) => {
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {filteredOrders.map((order) => {
                 const totalSalary = (order.drivers ?? []).reduce(
                   (s, d) => s + d.salary,
                   0,
@@ -194,10 +225,10 @@ export default function OrdersPage() {
                     key={String(order._id)}
                     sx={{
                       background: "#fff",
-                      borderRadius: "14px",
-                      padding: "14px 18px",
+                      borderRadius: "12px",
+                      padding: "12px 16px",
                       border: "1px solid #F0F0F0",
-                      boxShadow: "0 2px 6px rgba(0,0,0,.04)",
+                      boxShadow: "0 1px 4px rgba(0,0,0,.03)",
                       display: "flex",
                       alignItems: "center",
                       gap: 2,
@@ -214,7 +245,13 @@ export default function OrdersPage() {
                           flexWrap: "wrap",
                         }}
                       >
-                        <Typography sx={{ fontWeight: 800, fontSize: "15px" }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "14px",
+                            color: "#16181D",
+                          }}
+                        >
                           {order.customerName}
                         </Typography>
                         <StatusBadge status={order.status} />
@@ -222,7 +259,7 @@ export default function OrdersPage() {
                           {order.date}
                         </Typography>
                       </Box>
-                      <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                      <Typography sx={{ fontSize: "12px", color: "#999" }}>
                         {(order.drivers ?? [])
                           .map((d) => `🚗 ${d.name}`)
                           .join("  ")}
@@ -230,15 +267,21 @@ export default function OrdersPage() {
                     </Box>
 
                     {/* Дүн */}
-                    <Box sx={{ textAlign: "right", minWidth: 140 }}>
-                      <Typography sx={{ fontWeight: 900, fontSize: "17px" }}>
+                    <Box sx={{ textAlign: "right", minWidth: 130 }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: "16px",
+                          color: "#16181D",
+                        }}
+                      >
                         {(order.totalAmount ?? 0).toLocaleString()}₮
                       </Typography>
                       <Typography
                         sx={{
                           fontSize: "12px",
                           color: "#16A34A",
-                          fontWeight: 700,
+                          fontWeight: 500,
                         }}
                       >
                         Цалин: {totalSalary.toLocaleString()}₮
@@ -253,7 +296,7 @@ export default function OrdersPage() {
                         val &&
                         handleStatusChange(String(order._id), val as StatusKey)
                       }
-                      sx={{ minWidth: 160, fontSize: "13px", fontWeight: 700 }}
+                      sx={{ minWidth: 155, fontSize: "13px", fontWeight: 500 }}
                     >
                       {STATUSES.map((s) => (
                         <Option key={s.key} value={s.key}>
@@ -275,8 +318,8 @@ export default function OrdersPage() {
                       </IconButton>
                       <IconButton
                         size="sm"
-                        variant="outlined"
-                        color="danger"
+                        variant="plain"
+                        color="neutral"
                         onClick={() => handleDelete(String(order._id))}
                         sx={{ borderRadius: "8px" }}
                       >
@@ -291,7 +334,7 @@ export default function OrdersPage() {
         </Box>
       </Box>
 
-      {/* Modal — Шинэ / Засах */}
+      {/* Modal */}
       <Modal
         open={modalOpen}
         onClose={closeModal}
@@ -316,7 +359,7 @@ export default function OrdersPage() {
               alignItems: "center",
             }}
           >
-            <Typography sx={{ fontSize: "24px", fontWeight: "bold", pl: 1 }}>
+            <Typography sx={{ fontSize: "18px", fontWeight: 700, pl: 1 }}>
               {editOrder ? "Захиалга засах" : "Шинэ захиалга үүсгэх"}
             </Typography>
             <ModalClose onClick={closeModal} />
