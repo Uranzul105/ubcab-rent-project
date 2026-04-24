@@ -45,24 +45,37 @@ export default function LoginCard() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    const user = USERS.find(
-      (u) => u.username === username && u.password === password,
-    );
-
-    if (!user) {
-      setError("Нэвтрэх мэдээлэл буруу байна");
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError("Нэвтрэх мэдээлэл оруулна уу");
       return;
     }
 
-    // User-ийг localStorage-д хадгална
-    localStorage.setItem("currentUser", JSON.stringify(user));
+    try {
+      const res = await fetch("http://localhost:3001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    // Role-оос хамааран чиглүүлнэ
-    if (user.role === "admin") {
-      router.push("/pages/orders");
-    } else {
-      router.push("/pages/orders");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Нэвтрэх мэдээлэл буруу байна");
+        return;
+      }
+
+      // Хэрэглэгчийг localStorage-д хадгалах
+      localStorage.setItem("currentUser", JSON.stringify(data));
+
+      // Role-оос хамааран чиглүүлэх
+      if (data.role === "admin") {
+        router.push("/pages/orders");
+      } else {
+        router.push("/pages/orders");
+      }
+    } catch (err) {
+      setError("Сервертэй холбогдож чадсангүй");
     }
   };
 

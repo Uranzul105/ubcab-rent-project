@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import orderRoutes from "./routes/orderRoutes";
-import driverRoutes from "./routes/driverRoutes"; 
+import driverRoutes from "./routes/driverRoutes";
+import authRoutes from "./routes/authRoutes";  
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,7 +13,8 @@ app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 
 app.use("/api/orders", orderRoutes);
-app.use("/api/drivers", driverRoutes); 
+app.use("/api/drivers", driverRoutes);
+app.use("/api/auth", authRoutes);  
 
 app.get("/", (req, res) => {
   res.json({ message: "UBCab Rent API ажиллаж байна 🚀" });
