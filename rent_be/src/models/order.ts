@@ -13,6 +13,7 @@ export interface IOrder extends Document {
     name: string;
     salary: number;
     fuel: number;
+     transferred: boolean;
   }[];
 }
 
@@ -35,6 +36,7 @@ const OrderSchema = new Schema<IOrder>(
         name: String,
         salary: Number,
         fuel: { type: Number, default: 0 },
+         transferred: { type: Boolean, default: false },
       },
     ],
   },

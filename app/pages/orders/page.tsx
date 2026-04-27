@@ -35,6 +35,8 @@ const STATUSES = [
 
 type StatusKey = (typeof STATUSES)[number]["key"];
 
+const PER_PAGE = 15;
+
 function StatusBadge({ status }: { status: StatusKey }) {
   const s = STATUSES.find((x) => x.key === status) ?? STATUSES[0];
   return (
@@ -59,6 +61,7 @@ export default function OrdersPage() {
   const [filterName, setFilterName] = useState("");
   const [filterDriver, setFilterDriver] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -82,6 +85,15 @@ export default function OrdersPage() {
       : true;
     return matchFrom && matchTo && matchName && matchDriver;
   });
+
+  const totalPages = Math.ceil(filteredOrders.length / PER_PAGE);
+  const pagedOrders = filteredOrders.slice(
+    (page - 1) * PER_PAGE,
+    page * PER_PAGE,
+  );
+
+  // Filter өөрчлөгдөхөд page reset
+  const resetPage = () => setPage(1);
 
   const openCreate = () => {
     setEditOrder(null);
@@ -133,29 +145,38 @@ export default function OrdersPage() {
     setOrders((prev) => prev.filter((o) => String(o._id) !== id));
   };
 
+  // Admin: жолоочийн шилжүүлсэн toggle
+  const handleTransferDriver = async (orderId: string, driverIndex: number) => {
+    const order = orders.find((o) => String(o._id) === orderId);
+    if (!order) return;
+    const updatedDrivers = (order.drivers ?? []).map((d, i) =>
+      i === driverIndex ? { ...d, transferred: !d.transferred } : d,
+    );
+    await updateOrder(orderId, { drivers: updatedDrivers } as any);
+    setOrders((prev) =>
+      prev.map((o) =>
+        String(o._id) === orderId ? { ...o, drivers: updatedDrivers } : o,
+      ),
+    );
+  };
+
   // Нийт тооцоо
   const totalAmount = filteredOrders.reduce(
     (s, o) => s + (o.totalAmount ?? 0),
     0,
   );
   const totalSalary = filteredOrders.reduce(
-    (s, o) =>
-      s +
-      (o.drivers ?? []).reduce(
-        (ss, d) => ss + (d.salary ?? 0) + (d.fuel ?? 0),
-        0,
-      ),
+    (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.salary ?? 0), 0),
+    0,
+  );
+  const totalFuel = filteredOrders.reduce(
+    (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.fuel ?? 0), 0),
     0,
   );
   const totalPaid = filteredOrders
     .filter((o) => o.paid)
     .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
   const totalUnpaid = totalAmount - totalPaid;
-
-  const totalFuel = filteredOrders.reduce(
-    (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.fuel ?? 0), 0),
-    0,
-  );
 
   return (
     <div
@@ -182,7 +203,7 @@ export default function OrdersPage() {
             boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
           }}
         >
-          {/* Гарчиг + Шинэ захиалга */}
+          {/* Гарчиг */}
           <Box
             sx={{
               display: "flex",
@@ -232,33 +253,45 @@ export default function OrdersPage() {
             <Input
               type="date"
               value={filterFrom}
-              onChange={(e) => setFilterFrom(e.target.value)}
+              onChange={(e) => {
+                setFilterFrom(e.target.value);
+                resetPage();
+              }}
               sx={{ fontSize: "13px", height: 38, width: 160 }}
             />
             <Typography sx={{ fontSize: "13px", color: "#888" }}>—</Typography>
             <Input
               type="date"
               value={filterTo}
-              onChange={(e) => setFilterTo(e.target.value)}
+              onChange={(e) => {
+                setFilterTo(e.target.value);
+                resetPage();
+              }}
               sx={{ fontSize: "13px", height: 38, width: 160 }}
             />
             <Input
               placeholder="Захиалагчийн нэр..."
               value={filterName}
-              onChange={(e) => setFilterName(e.target.value)}
+              onChange={(e) => {
+                setFilterName(e.target.value);
+                resetPage();
+              }}
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{ fontSize: "13px", height: 38, flex: 1, minWidth: 160 }}
+              sx={{ fontSize: "13px", height: 38, flex: 1, minWidth: 150 }}
             />
             <Input
               placeholder="Жолоочийн нэр..."
               value={filterDriver}
-              onChange={(e) => setFilterDriver(e.target.value)}
+              onChange={(e) => {
+                setFilterDriver(e.target.value);
+                resetPage();
+              }}
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{ fontSize: "13px", height: 38, flex: 1, minWidth: 160 }}
+              sx={{ fontSize: "13px", height: 38, flex: 1, minWidth: 150 }}
             />
             {(filterFrom || filterTo || filterName || filterDriver) && (
               <Button
@@ -269,6 +302,7 @@ export default function OrdersPage() {
                   setFilterTo("");
                   setFilterName("");
                   setFilterDriver("");
+                  resetPage();
                 }}
                 sx={{ height: 38, borderRadius: "10px", fontSize: "13px" }}
               >
@@ -288,171 +322,141 @@ export default function OrdersPage() {
               <Typography>Захиалга байхгүй байна</Typography>
             </Box>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {filteredOrders.map((order, index) => {
-                const totalSal = (order.drivers ?? []).reduce(
-                  (s, d) => s + (d.salary ?? 0) + (d.fuel ?? 0),
-                  0,
-                );
-                return (
-                  <Box
-                    key={String(order._id)}
-                    sx={{
-                      background: "#fff",
-                      borderRadius: "12px",
-                      padding: "12px 16px",
-                      border: "1px solid #F0F0F0",
-                      boxShadow: "0 1px 4px rgba(0,0,0,.03)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                    }}
-                  >
-                    {/* Дэс дугаар */}
-                    <Typography
-                      sx={{ fontSize: "12px", color: "#bbb", minWidth: 20 }}
+            <>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {pagedOrders.map((order, index) => {
+                  const totalSal = (order.drivers ?? []).reduce(
+                    (s, d) => s + (d.salary ?? 0) + (d.fuel ?? 0),
+                    0,
+                  );
+                  return (
+                    <Box
+                      key={String(order._id)}
+                      sx={{
+                        background: "#fff",
+                        borderRadius: "12px",
+                        padding: "12px 16px",
+                        border: "1px solid #F0F0F0",
+                        boxShadow: "0 1px 4px rgba(0,0,0,.03)",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 2,
+                      }}
                     >
-                      {index + 1}
-                    </Typography>
-
-                    {/* Мэдээлэл */}
-                    <Box sx={{ flex: 1 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          mb: 0.5,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <Typography
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: "14px",
-                            color: "#16181D",
-                          }}
-                        >
-                          {order.customerName}
-                        </Typography>
-                        <StatusBadge status={order.status} />
-                        <Typography sx={{ fontSize: "12px", color: "#bbb" }}>
-                          {order.date}
-                        </Typography>
-                      </Box>
-                      {/* Жолоочийн нэр + цалин + шатахуун */}
-                      <Box>
-                        {(order.drivers ?? []).map((d, i) => (
-                          <Typography
-                            key={i}
-                            sx={{ fontSize: "12px", color: "#999" }}
-                          >
-                            🚗 {d.name} — цалин:{" "}
-                            {(d.salary ?? 0).toLocaleString()}₮
-                            {(d.fuel ?? 0) > 0 && (
-                              <span style={{ color: "#D97706" }}>
-                                {` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}
-                              </span>
-                            )}
-                          </Typography>
-                        ))}
-                      </Box>
-                    </Box>
-
-                    {/* Дүн */}
-                    <Box sx={{ textAlign: "right", minWidth: 120 }}>
-                      <Typography
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "15px",
-                          color: "#16181D",
-                        }}
-                      >
-                        {(order.totalAmount ?? 0).toLocaleString()}₮
-                      </Typography>
+                      {/* Дэс дугаар */}
                       <Typography
                         sx={{
                           fontSize: "12px",
-                          color: "#16A34A",
-                          fontWeight: 500,
+                          color: "#bbb",
+                          minWidth: 20,
+                          mt: 0.3,
                         }}
                       >
-                        Цалин: {totalSal.toLocaleString()}₮
+                        {(page - 1) * PER_PAGE + index + 1}
                       </Typography>
-                    </Box>
 
-                    {/* Admin: зөвхөн төлсөн/төлөөгүй */}
-                    {user?.role === "admin" ? (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <div
-                          onClick={() => handleTogglePaid(String(order._id))}
-                          style={{
-                            width: 36,
-                            height: 20,
-                            borderRadius: 10,
-                            background: order.paid ? "#16A34A" : "#D1D5DB",
-                            position: "relative",
-                            transition: "background .2s",
-                            cursor: "pointer",
+                      {/* Мэдээлэл */}
+                      <Box sx={{ flex: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            mb: 0.5,
+                            flexWrap: "wrap",
                           }}
                         >
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: 2,
-                              left: order.paid ? 18 : 2,
-                              width: 16,
-                              height: 16,
-                              borderRadius: "50%",
-                              background: "#fff",
-                              transition: "left .2s",
-                              boxShadow: "0 1px 4px rgba(0,0,0,.25)",
+                          <Typography
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: "14px",
+                              color: "#16181D",
                             }}
-                          />
-                        </div>
+                          >
+                            {order.customerName}
+                          </Typography>
+                          <StatusBadge status={order.status} />
+                          <Typography sx={{ fontSize: "12px", color: "#bbb" }}>
+                            {order.date}
+                          </Typography>
+                        </Box>
+
+                        {/* Жолоочид */}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 0.3,
+                          }}
+                        >
+                          {(order.drivers ?? []).map((d, i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <Typography
+                                sx={{ fontSize: "12px", color: "#999" }}
+                              >
+                                🚗 {d.name} — цалин:{" "}
+                                {(d.salary ?? 0).toLocaleString()}₮
+                                {(d.fuel ?? 0) > 0 && (
+                                  <span
+                                    style={{ color: "#D97706" }}
+                                  >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
+                                )}
+                              </Typography>
+
+                              {/* Менежер: зөвхөн харах */}
+                              {user?.role !== "admin" && d.transferred && (
+                                <Typography
+                                  sx={{
+                                    fontSize: "11px",
+                                    color: "#16A34A",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  ✓ Шилжүүлсэн
+                                </Typography>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+
+                      {/* Дүн */}
+                      <Box sx={{ textAlign: "right", minWidth: 120 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "15px",
+                            color: "#16181D",
+                          }}
+                        >
+                          {(order.totalAmount ?? 0).toLocaleString()}₮
+                        </Typography>
                         <Typography
                           sx={{
                             fontSize: "12px",
-                            fontWeight: 700,
-                            color: order.paid ? "#16A34A" : "#9CA3AF",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {order.paid ? "Төлсөн" : "Төлөөгүй"}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      // Менежер: төлөв + төлсөн/төлөөгүй + засах + устгах
-                      <>
-                        <Select
-                          size="sm"
-                          value={order.status}
-                          onChange={(_, val) =>
-                            val &&
-                            handleStatusChange(
-                              String(order._id),
-                              val as StatusKey,
-                            )
-                          }
-                          sx={{
-                            minWidth: 150,
-                            fontSize: "13px",
+                            color: "#16A34A",
                             fontWeight: 500,
                           }}
                         >
-                          {STATUSES.map((s) => (
-                            <Option key={s.key} value={s.key}>
-                              {s.label}
-                            </Option>
-                          ))}
-                        </Select>
+                          Цалин: {totalSal.toLocaleString()}₮
+                        </Typography>
+                      </Box>
+
+                      {/* Admin: төлсөн/төлөөгүй */}
+                      {user?.role === "admin" ? (
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
                           <div
-                            // onClick={() => handleTogglePaid(String(order._id))}
+                            onClick={() => handleTogglePaid(String(order._id))}
                             style={{
                               width: 36,
                               height: 20,
@@ -460,7 +464,7 @@ export default function OrdersPage() {
                               background: order.paid ? "#16A34A" : "#D1D5DB",
                               position: "relative",
                               transition: "background .2s",
-                              cursor: "default",
+                              cursor: "pointer",
                             }}
                           >
                             <div
@@ -488,80 +492,206 @@ export default function OrdersPage() {
                             {order.paid ? "Төлсөн" : "Төлөөгүй"}
                           </Typography>
                         </Box>
-                        <Box sx={{ display: "flex", gap: 0.5 }}>
-                          <IconButton
+                      ) : (
+                        <>
+                          <Select
                             size="sm"
-                            variant="outlined"
-                            color="neutral"
-                            onClick={() => openEdit(order)}
-                            sx={{ borderRadius: "8px" }}
+                            value={order.status}
+                            onChange={(_, val) =>
+                              val &&
+                              handleStatusChange(
+                                String(order._id),
+                                val as StatusKey,
+                              )
+                            }
+                            sx={{
+                              minWidth: 150,
+                              fontSize: "13px",
+                              fontWeight: 500,
+                            }}
                           >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="sm"
-                            variant="plain"
-                            color="neutral"
-                            onClick={() => handleDelete(String(order._id))}
-                            sx={{ borderRadius: "8px" }}
+                            {STATUSES.map((s) => (
+                              <Option key={s.key} value={s.key}>
+                                {s.label}
+                              </Option>
+                            ))}
+                          </Select>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
                           >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
+                            <Typography
+                              sx={{
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                color: order.paid ? "#16A34A" : "#9CA3AF",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {order.paid ? "Төлсөн" : "Төлөөгүй"}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: "flex", gap: 0.5 }}>
+                            <IconButton
+                              size="sm"
+                              variant="outlined"
+                              color="neutral"
+                              onClick={() => openEdit(order)}
+                              sx={{ borderRadius: "8px" }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="sm"
+                              variant="plain"
+                              color="neutral"
+                              onClick={() => handleDelete(String(order._id))}
+                              sx={{ borderRadius: "8px" }}
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </>
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
 
-          {/* Нийт дүн */}
-          {filteredOrders.length > 0 && (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 3,
-                mt: 1.5,
-                pt: 1.5,
-                borderTop: "1px solid #F0F0F0",
-                flexWrap: "wrap",
-              }}
-            >
-              <Typography sx={{ fontSize: "13px", color: "#888" }}>
-                Нийт гүйлгээ:{" "}
-                <b style={{ color: "#16181D" }}>
-                  {totalAmount.toLocaleString()}₮
-                </b>
+              {/* Хуудаслалт */}
+              {totalPages > 1 && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 0.5,
+                    mt: 2,
+                  }}
+                >
+                  <Button
+                    size="sm"
+                    variant="outlined"
+                    color="neutral"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => p - 1)}
+                    sx={{ minWidth: 36, borderRadius: "8px" }}
+                  >
+                    ‹
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (p) =>
+                        p === 1 || p === totalPages || Math.abs(p - page) <= 2,
+                    )
+                    .reduce((acc: number[], p, i, arr) => {
+                      if (i > 0 && arr[i - 1] !== p - 1) acc.push(-1);
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      p === -1 ? (
+                        <Typography
+                          key={`dot-${i}`}
+                          sx={{ alignSelf: "center", color: "#bbb", px: 0.5 }}
+                        >
+                          ...
+                        </Typography>
+                      ) : (
+                        <Button
+                          key={p}
+                          size="sm"
+                          variant={page === p ? "solid" : "outlined"}
+                          color="neutral"
+                          onClick={() => setPage(p)}
+                          sx={{
+                            minWidth: 36,
+                            borderRadius: "8px",
+                            ...(page === p && {
+                              backgroundColor: "#facc15",
+                              color: "#000",
+                              border: "none",
+                            }),
+                          }}
+                        >
+                          {p}
+                        </Button>
+                      ),
+                    )}
+                  <Button
+                    size="sm"
+                    variant="outlined"
+                    color="neutral"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                    sx={{ minWidth: 36, borderRadius: "8px" }}
+                  >
+                    ›
+                  </Button>
+                </Box>
+              )}
+
+              <Typography
+                sx={{
+                  textAlign: "center",
+                  fontSize: "12px",
+                  color: "#bbb",
+                  mt: 1,
+                }}
+              >
+                {(page - 1) * PER_PAGE + 1}–
+                {Math.min(page * PER_PAGE, filteredOrders.length)} /{" "}
+                {filteredOrders.length}
               </Typography>
-              <Typography sx={{ fontSize: "13px", color: "#888" }}>
-                Нийт цалин:{" "}
-                <b style={{ color: "#DC2626" }}>
-                  {totalSalary.toLocaleString()}₮
-                </b>
-              </Typography>
-              {totalFuel > 0 && (
+
+              {/* Нийт дүн */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 3,
+                  mt: 1.5,
+                  pt: 1.5,
+                  borderTop: "1px solid #F0F0F0",
+                  flexWrap: "wrap",
+                }}
+              >
                 <Typography sx={{ fontSize: "13px", color: "#888" }}>
-                  Нийт шатахуун:{" "}
-                  <b style={{ color: "#D97706" }}>
-                    {totalFuel.toLocaleString()}₮
+                  Нийт гүйлгээ:{" "}
+                  <b style={{ color: "#16181D" }}>
+                    {totalAmount.toLocaleString()}₮
                   </b>
                 </Typography>
-              )}
-              <Typography sx={{ fontSize: "13px", color: "#888" }}>
-                Төлөгдсөн:{" "}
-                <b style={{ color: "#16A34A" }}>
-                  {totalPaid.toLocaleString()}₮
-                </b>
-              </Typography>
-              <Typography sx={{ fontSize: "13px", color: "#888" }}>
-                Төлөгдөөгүй:{" "}
-                <b style={{ color: "#DC2626" }}>
-                  {totalUnpaid.toLocaleString()}₮
-                </b>
-              </Typography>
-            </Box>
+                <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                  Нийт цалин:{" "}
+                  <b style={{ color: "#16A34A" }}>
+                    {totalSalary.toLocaleString()}₮
+                  </b>
+                </Typography>
+                {totalFuel > 0 && (
+                  <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                    Нийт шатахуун:{" "}
+                    <b style={{ color: "#D97706" }}>
+                      {totalFuel.toLocaleString()}₮
+                    </b>
+                  </Typography>
+                )}
+                <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                  Төлөгдсөн:{" "}
+                  <b style={{ color: "#16A34A" }}>
+                    {totalPaid.toLocaleString()}₮
+                  </b>
+                </Typography>
+                <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                  Төлөгдөөгүй:{" "}
+                  <b style={{ color: "#DC2626" }}>
+                    {totalUnpaid.toLocaleString()}₮
+                  </b>
+                </Typography>
+              </Box>
+            </>
           )}
         </Box>
       </Box>

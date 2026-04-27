@@ -5,6 +5,7 @@ export type DriverRow = {
   name: string;
   salary: number;
   fuel: number;
+  transferred: boolean;
 };
 
 export type Order = {
