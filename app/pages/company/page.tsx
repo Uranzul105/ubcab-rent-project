@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Chip from "@mui/joy/Chip";
@@ -31,13 +31,15 @@ type CompanyGroup = {
   total: number;
   paid: number;
   unpaid: number;
+  totalFuel: number;
 };
 
 export default function CompanyPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<CompanyGroup | null>(null);
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [selected, setSelected] = useState<string | null>(null);
+  const now = new Date();
+  const [filterYear, setFilterYear] = useState(now.getFullYear());
   const [filterMonth, setFilterMonth] = useState<number | "all">("all");
 
   useEffect(() => {
@@ -46,34 +48,51 @@ export default function CompanyPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Он сараар шүүх
-  const filteredOrders = orders.filter((o) => {
-    const d = new Date(o.date);
-    const matchYear = d.getFullYear() === filterYear;
-    const matchMonth =
-      filterMonth === "all" ? true : d.getMonth() === filterMonth;
-    return matchYear && matchMonth;
-  });
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const d = new Date(o.date);
+      const matchYear = d.getFullYear() === filterYear;
+      const matchMonth =
+        filterMonth === "all" ? true : d.getMonth() === filterMonth;
+      return matchYear && matchMonth;
+    });
+  }, [orders, filterYear, filterMonth]);
 
-  // Байгууллагаар бүлэглэх — 2+ захиалгатай
-  const companyGroups: CompanyGroup[] = Object.values(
-    filteredOrders.reduce(
-      (acc, order) => {
-        const name = order.customerName;
-        if (!acc[name])
-          acc[name] = { name, orders: [], total: 0, paid: 0, unpaid: 0 };
-        acc[name].orders.push(order);
-        acc[name].total += order.totalAmount ?? 0;
-        if (order.paid) acc[name].paid += order.totalAmount ?? 0;
-        else if (order.status === "done")
-          acc[name].unpaid += order.totalAmount ?? 0;
-        return acc;
-      },
-      {} as Record<string, CompanyGroup>,
-    ),
-  ).filter((g) => g.orders.length >= 2);
+  const companyGroups: CompanyGroup[] = useMemo(() => {
+    const groups: Record<string, Order[]> = {};
+    filteredOrders.forEach((o) => {
+      if (!groups[o.customerName]) groups[o.customerName] = [];
+      groups[o.customerName].push(o);
+    });
+    return Object.entries(groups)
+      .filter(([, os]) => os.length >= 2)
+      .map(([name, os]) => {
+        const sortedOrders = [...os].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+        const total = os.reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+        const paid = os
+          .filter((o) => o.paid)
+          .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+        const unpaid = os
+          .filter((o) => !o.paid && o.status === "done")
+          .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+        const totalFuel = os.reduce(
+          (s, o) =>
+            s + (o.drivers ?? []).reduce((ss, d) => ss + (d.fuel ?? 0), 0),
+          0,
+        );
+        return { name, orders: sortedOrders, total, paid, unpaid, totalFuel };
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.orders[0]?.date ?? 0).getTime() -
+          new Date(a.orders[0]?.date ?? 0).getTime(),
+      );
+  }, [filteredOrders]);
 
-  const SEL = { fontSize: "13px", fontWeight: 600 };
+  const selectedGroup = companyGroups.find((g) => g.name === selected) ?? null;
+  const SEL = { fontSize: "13px", height: 38 };
 
   return (
     <div
@@ -91,8 +110,7 @@ export default function CompanyPage() {
       </div>
 
       <Box sx={{ maxWidth: 960, margin: "0 auto", padding: "24px" }}>
-        {selected ? (
-          // ── Дэлгэрэнгүй харагдац ──────────────────────────────
+        {selectedGroup ? (
           <Box>
             <Button
               variant="plain"
@@ -102,7 +120,6 @@ export default function CompanyPage() {
             >
               ← Буцах
             </Button>
-
             <Box
               sx={{
                 background: "rgba(255,255,255,0.95)",
@@ -120,70 +137,114 @@ export default function CompanyPage() {
                   mb: 2,
                 }}
               >
-                {selected.name}
+                {selectedGroup.name}
               </Typography>
 
-              {/* Статистик */}
+              {/* Статистик — 4 card + шатахуун */}
               <Box
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "repeat(4,1fr)",
                   gap: 1.5,
-                  mb: 3,
+                  mb: selectedGroup.totalFuel > 0 ? 1.5 : 3,
                 }}
               >
-                {[
-                  {
-                    label: "Нийт захиалга",
-                    value: selected.orders.length + " ш",
-                    color: "#2563EB",
-                    bg: "#DBEAFE",
-                  },
-                  {
-                    label: "Нийт дүн",
-                    value: selected.total.toLocaleString() + "₮",
-                    color: "#16181D",
-                    bg: "#F8FAFC",
-                  },
-                  {
-                    label: "Төлөгдсөн",
-                    value: selected.paid.toLocaleString() + "₮",
-                    color: "#16A34A",
-                    bg: "#DCFCE7",
-                  },
-                  {
-                    label: "Үлдэгдэл",
-                    value:
-                      selected.unpaid > 0
-                        ? selected.unpaid.toLocaleString() + "₮"
-                        : "✓ Бүгд төлсөн",
-                    color: selected.unpaid > 0 ? "#DC2626" : "#16A34A",
-                    bg: selected.unpaid > 0 ? "#FEE2E2" : "#DCFCE7",
-                  },
-                ].map((s) => (
-                  <Box
-                    key={s.label}
+                <Box
+                  sx={{
+                    background: "#DBEAFE",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: "20px", fontWeight: 700, color: "#2563EB" }}
+                  >
+                    {selectedGroup.orders.length} ш
+                  </Typography>
+                  <Typography sx={{ fontSize: "12px", color: "#888", mt: 0.5 }}>
+                    Нийт захиалга
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    background: "#F8FAFC",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: "20px", fontWeight: 700, color: "#16181D" }}
+                  >
+                    {selectedGroup.total.toLocaleString()}₮
+                  </Typography>
+                  <Typography sx={{ fontSize: "12px", color: "#888", mt: 0.5 }}>
+                    Нийт дүн
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    background: "#DCFCE7",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: "20px", fontWeight: 700, color: "#16A34A" }}
+                  >
+                    {selectedGroup.paid.toLocaleString()}₮
+                  </Typography>
+                  <Typography sx={{ fontSize: "12px", color: "#888", mt: 0.5 }}>
+                    Төлөгдсөн
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    background:
+                      selectedGroup.unpaid > 0 ? "#FEE2E2" : "#DCFCE7",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <Typography
                     sx={{
-                      background: s.bg,
-                      borderRadius: "12px",
-                      padding: "14px 16px",
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      color: selectedGroup.unpaid > 0 ? "#DC2626" : "#16A34A",
                     }}
                   >
-                    <Typography
-                      sx={{ fontSize: "17px", fontWeight: 700, color: s.color }}
-                    >
-                      {s.value}
-                    </Typography>
-                    <Typography
-                      sx={{ fontSize: "12px", color: "#888", mt: 0.5 }}
-                    >
-                      {s.label}
-                    </Typography>
-                  </Box>
-                ))}
+                    {selectedGroup.unpaid > 0
+                      ? selectedGroup.unpaid.toLocaleString() + "₮"
+                      : "✓ Бүгд төлсөн"}
+                  </Typography>
+                  <Typography sx={{ fontSize: "12px", color: "#888", mt: 0.5 }}>
+                    Үлдэгдэл
+                  </Typography>
+                </Box>
               </Box>
 
-              {/* Захиалгуудын жагсаалт — сүүлийн нь дээр */}
+              {/* Нийт шатахуун */}
+              {selectedGroup.totalFuel > 0 && (
+                <Box
+                  sx={{
+                    background: "#FEF3C7",
+                    borderRadius: "12px",
+                    padding: "12px 16px",
+                    mb: 2.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: "15px", fontWeight: 700, color: "#D97706" }}
+                  >
+                    ⛽ Нийт шатахуун: {selectedGroup.totalFuel.toLocaleString()}
+                    ₮
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Захиалгуудын жагсаалт */}
               <Typography
                 sx={{
                   fontSize: "15px",
@@ -195,104 +256,111 @@ export default function CompanyPage() {
                 Захиалгуудын жагсаалт
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {[...selected.orders]
-                  .sort(
-                    (a, b) =>
-                      new Date(b.date).getTime() - new Date(a.date).getTime(),
-                  )
-                  .map((o) => {
-                    const sal = (o.drivers ?? []).reduce(
-                      (s, d) => s + d.salary,
-                      0,
-                    );
-                    return (
-                      <Box
-                        key={String(o._id)}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                          background: "#fff",
-                          borderRadius: "10px",
-                          padding: "12px 16px",
-                          border: "1px solid #F0F0F0",
-                        }}
-                      >
-                        <Box sx={{ flex: 1 }}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              mb: 0.5,
-                            }}
-                          >
-                            <Typography
-                              sx={{ fontWeight: 600, fontSize: "13px" }}
-                            >
-                              {o.date}
-                            </Typography>
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              color={
-                                o.status === "done"
-                                  ? "success"
-                                  : o.status === "cancelled"
-                                    ? "danger"
-                                    : o.status === "active"
-                                      ? "warning"
-                                      : "primary"
-                              }
-                              sx={{ fontSize: "11px" }}
-                            >
-                              {o.status === "done"
-                                ? "Дууссан"
-                                : o.status === "cancelled"
-                                  ? "Цуцалсан"
-                                  : o.status === "active"
-                                    ? "Хийгдэж байна"
-                                    : "Шинэ"}
-                            </Chip>
-                          </Box>
-                          {/* Жолоочийн нэр */}
-                          <Typography sx={{ fontSize: "12px", color: "#888" }}>
-                            {(o.drivers ?? [])
-                              .map((d) => `🚗 ${d.name}`)
-                              .join("  ")}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: "right" }}>
-                          <Typography
-                            sx={{ fontWeight: 700, fontSize: "14px" }}
-                          >
-                            {(o.totalAmount ?? 0).toLocaleString()}₮
-                          </Typography>
-                          <Typography sx={{ fontSize: "12px", color: "#888" }}>
-                            Цалин: {sal.toLocaleString()}₮
-                          </Typography>
-                        </Box>
-                        <Chip
-                          size="sm"
-                          variant="soft"
-                          color={o.paid ? "success" : "danger"}
+                {selectedGroup.orders.map((o) => {
+                  const sal = (o.drivers ?? []).reduce(
+                    (s, d) => s + (d.salary ?? 0),
+                    0,
+                  );
+                  const fuel = (o.drivers ?? []).reduce(
+                    (s, d) => s + (d.fuel ?? 0),
+                    0,
+                  );
+                  return (
+                    <Box
+                      key={String(o._id)}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        background: "#fff",
+                        borderRadius: "10px",
+                        padding: "12px 16px",
+                        border: "1px solid #F0F0F0",
+                      }}
+                    >
+                      <Box sx={{ flex: 1 }}>
+                        <Box
                           sx={{
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            minWidth: 90,
-                            justifyContent: "center",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            mb: 0.5,
                           }}
                         >
-                          {o.paid ? "✓ Төлсөн" : "✗ Төлөөгүй"}
-                        </Chip>
+                          <Typography
+                            sx={{ fontWeight: 600, fontSize: "13px" }}
+                          >
+                            {o.date}
+                          </Typography>
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={
+                              o.status === "done"
+                                ? "success"
+                                : o.status === "cancelled"
+                                  ? "danger"
+                                  : o.status === "active"
+                                    ? "warning"
+                                    : "primary"
+                            }
+                            sx={{ fontSize: "11px" }}
+                          >
+                            {o.status === "done"
+                              ? "Дууссан"
+                              : o.status === "cancelled"
+                                ? "Цуцалсан"
+                                : o.status === "active"
+                                  ? "Хийгдэж байна"
+                                  : "Шинэ"}
+                          </Chip>
+                        </Box>
+                        <Box>
+                          {(o.drivers ?? []).map((d, i) => (
+                            <Typography
+                              key={i}
+                              sx={{ fontSize: "12px", color: "#888" }}
+                            >
+                              🚗 {d.name} — цалин:{" "}
+                              {(d.salary ?? 0).toLocaleString()}₮
+                              {(d.fuel ?? 0) > 0 && (
+                                <span
+                                  style={{ color: "#D97706" }}
+                                >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
+                              )}
+                            </Typography>
+                          ))}
+                        </Box>
                       </Box>
-                    );
-                  })}
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: "14px" }}>
+                          {(o.totalAmount ?? 0).toLocaleString()}₮
+                        </Typography>
+                        <Typography sx={{ fontSize: "12px", color: "#16A34A" }}>
+                          Цалин: {sal.toLocaleString()}₮
+                          {fuel > 0 && ` + ⛽ ${fuel.toLocaleString()}₮`}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color={o.paid ? "success" : "danger"}
+                        sx={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          minWidth: 90,
+                          justifyContent: "center",
+                        }}
+                      >
+                        {o.paid ? "✓ Төлсөн" : "✗ Төлөөгүй"}
+                      </Chip>
+                    </Box>
+                  );
+                })}
               </Box>
             </Box>
           </Box>
         ) : (
-          // ── Байгууллагуудын жагсаалт ────────────────────────────
           <Box
             sx={{
               background: "rgba(255,255,255,0.95)",
@@ -326,8 +394,6 @@ export default function CompanyPage() {
                   ({companyGroups.length} байгууллага)
                 </Typography>
               </Typography>
-
-              {/* Он сараар filter */}
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Select
                   value={filterYear}
@@ -342,8 +408,10 @@ export default function CompanyPage() {
                 </Select>
                 <Select
                   value={filterMonth}
-                  onChange={(_, v) => v !== null && setFilterMonth(v as any)}
-                  sx={SEL}
+                  onChange={(_, v) =>
+                    v !== null && setFilterMonth(v as number | "all")
+                  }
+                  sx={{ ...SEL, minWidth: 120 }}
                 >
                   <Option value="all">Бүх сар</Option>
                   {MONTHS.map((m, i) => (
@@ -363,109 +431,113 @@ export default function CompanyPage() {
               <Box sx={{ textAlign: "center", padding: "48px", color: "#bbb" }}>
                 <Typography sx={{ fontSize: "40px" }}>🏢</Typography>
                 <Typography>Байгууллага байхгүй байна</Typography>
-                <Typography sx={{ fontSize: "13px", mt: 1, color: "#aaa" }}>
+                <Typography sx={{ fontSize: "13px", mt: 1 }}>
                   Нэг захиалагч 2+ захиалга өгсөн үед энд харагдана
                 </Typography>
               </Box>
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {companyGroups
-                  .sort((a, b) => {
-                    // Сүүлийн захиалгын огноогоор эрэмбэлэх
-                    const latestA = Math.max(
-                      ...a.orders.map((o) => new Date(o.date).getTime()),
-                    );
-                    const latestB = Math.max(
-                      ...b.orders.map((o) => new Date(o.date).getTime()),
-                    );
-                    return latestB - latestA;
-                  })
-                  .map((company) => (
-                    <Box
-                      key={company.name}
-                      onClick={() => setSelected(company)}
-                      sx={{
-                        background: "#fff",
-                        borderRadius: "12px",
-                        padding: "14px 18px",
-                        border: "1px solid #F0F0F0",
-                        boxShadow: "0 1px 4px rgba(0,0,0,.03)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        cursor: "pointer",
-                        "&:hover": { background: "#FAFAFA" },
-                      }}
-                    >
-                      <Box sx={{ flex: 1 }}>
+                {companyGroups.map((company) => (
+                  <Box
+                    key={company.name}
+                    onClick={() => setSelected(company.name)}
+                    sx={{
+                      background: "#fff",
+                      borderRadius: "12px",
+                      padding: "14px 18px",
+                      border: "1px solid #F0F0F0",
+                      boxShadow: "0 1px 4px rgba(0,0,0,.03)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      cursor: "pointer",
+                      "&:hover": { background: "#FAFAFA" },
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          color: "#16181D",
+                        }}
+                      >
+                        {company.name}
+                      </Typography>
+                      <Typography
+                        sx={{ fontSize: "12px", color: "#888", mt: 0.3 }}
+                      >
+                        {company.orders.length} захиалга · Сүүлд:{" "}
+                        {company.orders[0]?.date}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 3 }}>
+                      <Box sx={{ textAlign: "right" }}>
                         <Typography
                           sx={{
-                            fontWeight: 600,
                             fontSize: "15px",
+                            fontWeight: 700,
                             color: "#16181D",
                           }}
                         >
-                          {company.name}
+                          {company.total.toLocaleString()}₮
                         </Typography>
+                        <Typography sx={{ fontSize: "11px", color: "#888" }}>
+                          нийт дүн
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: "right" }}>
                         <Typography
-                          sx={{ fontSize: "12px", color: "#888", mt: 0.3 }}
+                          sx={{
+                            fontSize: "15px",
+                            fontWeight: 700,
+                            color: "#16A34A",
+                          }}
                         >
-                          {company.orders.length} захиалга
+                          {company.paid.toLocaleString()}₮
+                        </Typography>
+                        <Typography sx={{ fontSize: "11px", color: "#888" }}>
+                          төлөгдсөн
                         </Typography>
                       </Box>
-
-                      <Box sx={{ display: "flex", gap: 3 }}>
-                        <Box sx={{ textAlign: "right" }}>
-                          <Typography
-                            sx={{
-                              fontSize: "15px",
-                              fontWeight: 700,
-                              color: "#16181D",
-                            }}
-                          >
-                            {(company.total / 1000000).toFixed(1)}M₮
-                          </Typography>
-                          <Typography sx={{ fontSize: "11px", color: "#888" }}>
-                            нийт дүн
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: "right" }}>
-                          <Typography
-                            sx={{
-                              fontSize: "15px",
-                              fontWeight: 700,
-                              color: "#16A34A",
-                            }}
-                          >
-                            {(company.paid / 1000000).toFixed(1)}M₮
-                          </Typography>
-                          <Typography sx={{ fontSize: "11px", color: "#888" }}>
-                            төлөгдсөн
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: "right" }}>
-                          <Typography
-                            sx={{
-                              fontSize: "15px",
-                              fontWeight: 700,
-                              color: company.unpaid > 0 ? "#DC2626" : "#16A34A",
-                            }}
-                          >
-                            {company.unpaid > 0
-                              ? (company.unpaid / 1000000).toFixed(1) + "M₮"
-                              : "✓"}
-                          </Typography>
-                          <Typography sx={{ fontSize: "11px", color: "#888" }}>
-                            үлдэгдэл
-                          </Typography>
-                        </Box>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography
+                          sx={{
+                            fontSize: "15px",
+                            fontWeight: 700,
+                            color: company.unpaid > 0 ? "#DC2626" : "#16A34A",
+                          }}
+                        >
+                          {company.unpaid > 0
+                            ? company.unpaid.toLocaleString() + "₮"
+                            : "✓"}
+                        </Typography>
+                        <Typography sx={{ fontSize: "11px", color: "#888" }}>
+                          үлдэгдэл
+                        </Typography>
                       </Box>
-
-                      <Typography sx={{ fontSize: "18px", color: "#bbb" }}>
-                        ›
-                      </Typography>
+                      {company.totalFuel > 0 && (
+                        <Box sx={{ textAlign: "right" }}>
+                          <Typography
+                            sx={{
+                              fontSize: "15px",
+                              fontWeight: 700,
+                              color: "#D97706",
+                            }}
+                          >
+                            ⛽ {company.totalFuel.toLocaleString()}₮
+                          </Typography>
+                          <Typography sx={{ fontSize: "11px", color: "#888" }}>
+                            шатахуун
+                          </Typography>
+                        </Box>
+                      )}
                     </Box>
-                  ))}
+                    <Typography sx={{ fontSize: "18px", color: "#bbb" }}>
+                      ›
+                    </Typography>
+                  </Box>
+                ))}
               </Box>
             )}
           </Box>

@@ -6,7 +6,7 @@ import CardActions from "@mui/joy/CardActions";
 import Image from "next/image";
 import { Input } from "@mui/joy";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const USERS = [
   {
@@ -44,6 +44,10 @@ export default function LoginCard() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    localStorage.removeItem("currentUser");
+  }, []);
 
   const handleLogin = async () => {
     if (!username || !password) {

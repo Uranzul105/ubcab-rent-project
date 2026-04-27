@@ -12,6 +12,7 @@ export interface IOrder extends Document {
     phone: string;
     name: string;
     salary: number;
+    fuel: number;
   }[];
 }
 
@@ -33,6 +34,7 @@ const OrderSchema = new Schema<IOrder>(
         phone: String,
         name: String,
         salary: Number,
+        fuel: { type: Number, default: 0 },
       },
     ],
   },

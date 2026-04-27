@@ -7,12 +7,21 @@ import { useEffect, useState } from "react";
 
 export default function Header() {
   const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("currentUser") || "{}");
-    setRole(user.role || null);
+    setMounted(true);
+    const u = JSON.parse(localStorage.getItem("currentUser") || "null");
+    setUser(u);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    router.push("/");
+  };
+
+  if (!mounted) return null;
 
   return (
     <div
@@ -32,42 +41,80 @@ export default function Header() {
         border: "1px solid rgba(255,255,255,0.25)",
       }}
     >
-      {/* Logo */}
       <Image src="/logo.png" alt="logo" width={120} height={40} />
 
-      {/* Menu */}
-      <div
-        style={{
-          display: "flex",
-          gap: "50px",
-          fontSize: "15px",
-          fontWeight: 500,
-          cursor: "pointer",
-        }}
-      >
-        <span
-          className="menu"
-          onClick={() => window.open("https://ubcab.mn", "_blank")}
+      {/* Нэвтэрсэн үед бүх цэс */}
+      {user ? (
+        <div
+          style={{
+            display: "flex",
+            gap: "50px",
+            fontSize: "15px",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
         >
-          Бидний тухай
-        </span>
-        <span className="menu" onClick={() => router.push("/pages/orders")}>
-          Захиалгууд
-        </span>
-        <span className="menu" onClick={() => router.push("/pages/drivers")}>
-          Жолооч
-        </span>
-        <span className="menu" onClick={() => router.push("/pages/company")}>
-          Байгууллага
-        </span>
-        {role === "admin" && (
-          <span className="menu" onClick={() => router.push("/pages/report")}>
-            Тайлан
+          <span
+            className="menu"
+            onClick={() => window.open("https://ubcab.mn", "_blank")}
+          >
+            Бидний тухай
           </span>
+          <span className="menu" onClick={() => router.push("/pages/orders")}>
+            Захиалгууд
+          </span>
+          <span className="menu" onClick={() => router.push("/pages/drivers")}>
+            Жолооч
+          </span>
+          <span className="menu" onClick={() => router.push("/pages/company")}>
+            Байгууллага
+          </span>
+          {user.role === "admin" && (
+            <span className="menu" onClick={() => router.push("/pages/report")}>
+              Тайлан
+            </span>
+          )}
+        </div>
+      ) : (
+        /* Нэвтрээгүй үед зөвхөн Бидний тухай */
+        <div
+          style={{
+            display: "flex",
+            gap: "50px",
+            fontSize: "15px",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          <span
+            className="menu"
+            onClick={() => window.open("https://ubcab.mn", "_blank")}
+          >
+            Бидний тухай
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        {/* <Language /> */}
+        {user && (
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "8px 20px",
+              borderRadius: "20px",
+              border: "1.5px solid rgba(255,255,255,0.5)",
+              background: "rgba(255,255,255,0.2)",
+              color: "#fff",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Гарах
+          </button>
         )}
       </div>
-
-      <div>{/* <Language /> */}</div>
     </div>
   );
 }
