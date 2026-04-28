@@ -9,6 +9,7 @@ import Option from "@mui/joy/Option";
 import Button from "@mui/joy/Button";
 import Header from "@/app/components/Header";
 import { getOrders, updateOrder, Order } from "@/app/lib/orderService";
+import * as XLSX from "xlsx";
 
 const MONTHS = [
   "1-р сар",
@@ -129,6 +130,41 @@ export default function ReportPage() {
 
   const SEL = { fontSize: "13px", height: 36 };
 
+  const handleExport = () => {
+    const rows = [
+      [
+        "#",
+        "Огноо",
+        "Утас",
+        "Жолоочийн нэр",
+        "Захиалагч",
+        "Цалин",
+        "Шатахуун",
+        "Нийт",
+        "Шилжүүлсэн",
+      ],
+      ...allEntries.map((d, i) => [
+        i + 1,
+        d.orderDate,
+        d.phone,
+        d.name,
+        d.customerName,
+        d.salary,
+        d.fuel,
+        d.salary + d.fuel,
+        d.transferred ? "Тийм" : "Үгүй",
+      ]),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [4, 12, 12, 18, 18, 12, 12, 12, 12].map((w) => ({ wch: w }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Тайлан");
+    XLSX.writeFile(
+      wb,
+      `UBCab_Тайлан_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
+  };
+
   return (
     <div
       style={{
@@ -156,7 +192,15 @@ export default function ReportPage() {
         >
           {/* Гарчиг */}
           <Typography
-            sx={{ fontSize: "20px", fontWeight: 700, color: "#16181D", mb: 2 }}
+            sx={{
+              fontSize: "20px",
+              fontWeight: 700,
+              color: "#16181D",
+              mb: 2,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
             Тайлан — Жолоочийн цалин
             <Typography
@@ -165,6 +209,18 @@ export default function ReportPage() {
             >
               ({allEntries.length} бичлэг)
             </Typography>
+            <Button
+              onClick={handleExport}
+              sx={{
+                backgroundColor: "#16A34A",
+                color: "#fff",
+                borderRadius: "40px",
+                fontWeight: 700,
+                "&:hover": { backgroundColor: "#15803D" },
+              }}
+            >
+              ⬇ Excel татах
+            </Button>
           </Typography>
 
           {/* Статистик */}

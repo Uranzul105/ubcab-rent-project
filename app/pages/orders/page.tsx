@@ -34,7 +34,6 @@ const STATUSES = [
 ] as const;
 
 type StatusKey = (typeof STATUSES)[number]["key"];
-
 const PER_PAGE = 15;
 
 function StatusBadge({ status }: { status: StatusKey }) {
@@ -71,7 +70,6 @@ export default function OrdersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Шүүлт
   const filteredOrders = orders.filter((o) => {
     const matchFrom = filterFrom ? o.date >= filterFrom : true;
     const matchTo = filterTo ? o.date <= filterTo : true;
@@ -91,8 +89,6 @@ export default function OrdersPage() {
     (page - 1) * PER_PAGE,
     page * PER_PAGE,
   );
-
-  // Filter өөрчлөгдөхөд page reset
   const resetPage = () => setPage(1);
 
   const openCreate = () => {
@@ -145,27 +141,11 @@ export default function OrdersPage() {
     setOrders((prev) => prev.filter((o) => String(o._id) !== id));
   };
 
-  // Admin: жолоочийн шилжүүлсэн toggle
-  const handleTransferDriver = async (orderId: string, driverIndex: number) => {
-    const order = orders.find((o) => String(o._id) === orderId);
-    if (!order) return;
-    const updatedDrivers = (order.drivers ?? []).map((d, i) =>
-      i === driverIndex ? { ...d, transferred: !d.transferred } : d,
-    );
-    await updateOrder(orderId, { drivers: updatedDrivers } as any);
-    setOrders((prev) =>
-      prev.map((o) =>
-        String(o._id) === orderId ? { ...o, drivers: updatedDrivers } : o,
-      ),
-    );
-  };
-
-  // Нийт тооцоо
   const totalAmount = filteredOrders.reduce(
     (s, o) => s + (o.totalAmount ?? 0),
     0,
   );
-  const totalSalary = filteredOrders.reduce(
+  const totalSalarySum = filteredOrders.reduce(
     (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.salary ?? 0), 0),
     0,
   );
@@ -203,7 +183,6 @@ export default function OrdersPage() {
             boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
           }}
         >
-          {/* Гарчиг */}
           <Box
             sx={{
               display: "flex",
@@ -240,7 +219,6 @@ export default function OrdersPage() {
             )}
           </Box>
 
-          {/* Filter */}
           <Box
             sx={{
               display: "flex",
@@ -259,7 +237,7 @@ export default function OrdersPage() {
               }}
               sx={{ fontSize: "13px", height: 38, width: 160 }}
             />
-            <Typography sx={{ fontSize: "13px", color: "#888" }}>—</Typography>
+            <Typography sx={{ fontSize: "13px", color: "#888" }}>-</Typography>
             <Input
               type="date"
               value={filterTo}
@@ -311,7 +289,6 @@ export default function OrdersPage() {
             )}
           </Box>
 
-          {/* Жагсаалт */}
           {loading ? (
             <Box sx={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
               <Typography>Уншиж байна...</Typography>
@@ -329,21 +306,26 @@ export default function OrdersPage() {
                     (s, d) => s + (d.salary ?? 0) + (d.fuel ?? 0),
                     0,
                   );
+                  const allTransferred =
+                    (order.drivers ?? []).length > 0 &&
+                    (order.drivers ?? []).every((d) => d.transferred);
+                  const isFullyDone =
+                    order.status === "done" && order.paid && allTransferred;
+
                   return (
                     <Box
                       key={String(order._id)}
                       sx={{
-                        background: "#fff",
+                        background: isFullyDone ? "#F0FDF4" : "#fff",
+                        border: `1px solid ${isFullyDone ? "#BBF7D0" : "#F0F0F0"}`,
                         borderRadius: "12px",
                         padding: "12px 16px",
-                        border: "1px solid #F0F0F0",
                         boxShadow: "0 1px 4px rgba(0,0,0,.03)",
                         display: "flex",
                         alignItems: "flex-start",
                         gap: 2,
                       }}
                     >
-                      {/* Дэс дугаар */}
                       <Typography
                         sx={{
                           fontSize: "12px",
@@ -355,7 +337,6 @@ export default function OrdersPage() {
                         {(page - 1) * PER_PAGE + index + 1}
                       </Typography>
 
-                      {/* Мэдээлэл */}
                       <Box sx={{ flex: 1 }}>
                         <Box
                           sx={{
@@ -381,7 +362,6 @@ export default function OrdersPage() {
                           </Typography>
                         </Box>
 
-                        {/* Жолоочид */}
                         <Box
                           sx={{
                             display: "flex",
@@ -410,9 +390,7 @@ export default function OrdersPage() {
                                   >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
                                 )}
                               </Typography>
-
-                              {/* Менежер: зөвхөн харах */}
-                              {user?.role !== "admin" && d.transferred && (
+                              {d.transferred && (
                                 <Typography
                                   sx={{
                                     fontSize: "11px",
@@ -428,7 +406,6 @@ export default function OrdersPage() {
                         </Box>
                       </Box>
 
-                      {/* Дүн */}
                       <Box sx={{ textAlign: "right", minWidth: 120 }}>
                         <Typography
                           sx={{
@@ -450,7 +427,6 @@ export default function OrdersPage() {
                         </Typography>
                       </Box>
 
-                      {/* Admin: төлсөн/төлөөгүй */}
                       {user?.role === "admin" ? (
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
@@ -523,6 +499,27 @@ export default function OrdersPage() {
                               gap: 1,
                             }}
                           >
+                            <div
+                              style={{
+                                width: 36,
+                                height: 20,
+                                borderRadius: 10,
+                                background: order.paid ? "#16A34A" : "#D1D5DB",
+                                position: "relative",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 2,
+                                  left: order.paid ? 18 : 2,
+                                  width: 16,
+                                  height: 16,
+                                  borderRadius: "50%",
+                                  background: "#fff",
+                                }}
+                              />
+                            </div>
                             <Typography
                               sx={{
                                 fontSize: "12px",
@@ -561,7 +558,6 @@ export default function OrdersPage() {
                 })}
               </Box>
 
-              {/* Хуудаслалт */}
               {totalPages > 1 && (
                 <Box
                   sx={{
@@ -646,7 +642,6 @@ export default function OrdersPage() {
                 {filteredOrders.length}
               </Typography>
 
-              {/* Нийт дүн */}
               <Box
                 sx={{
                   display: "flex",
@@ -667,7 +662,7 @@ export default function OrdersPage() {
                 <Typography sx={{ fontSize: "13px", color: "#888" }}>
                   Нийт цалин:{" "}
                   <b style={{ color: "#16A34A" }}>
-                    {totalSalary.toLocaleString()}₮
+                    {totalSalarySum.toLocaleString()}₮
                   </b>
                 </Typography>
                 {totalFuel > 0 && (
@@ -696,7 +691,6 @@ export default function OrdersPage() {
         </Box>
       </Box>
 
-      {/* Modal */}
       <Modal
         open={modalOpen}
         onClose={closeModal}
