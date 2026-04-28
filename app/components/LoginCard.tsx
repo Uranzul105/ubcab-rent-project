@@ -108,7 +108,7 @@ export default function LoginCard() {
       >
         Нэвтрэх
         <div>
-          <Image src="/globe.svg" alt="logo" width={20} height={20} />
+          <Image src="/cab.png" alt="logo" width={20} height={20} />
         </div>
       </div>
 

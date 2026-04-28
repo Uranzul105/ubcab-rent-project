@@ -56,7 +56,7 @@ export default function Header() {
         >
           <span
             className="menu"
-            onClick={() => window.open("https://ubcab.mn", "_blank")}
+            onClick={() => window.open("https://ubcab.mn/mn/rent", "_blank")}
           >
             Бидний тухай
           </span>
