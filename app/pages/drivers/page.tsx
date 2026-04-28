@@ -28,7 +28,7 @@ export default function DriversPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editDriver, setEditDriver] = useState<Driver | null>(null);
-  const [form, setForm] = useState({ phone: "", name: "" });
+  const [form, setForm] = useState({ phone: "", name: "", regno: "" });
   const [page, setPage] = useState(1);
   const PER = 15;
 
@@ -55,21 +55,25 @@ export default function DriversPage() {
   // Modal нээх — шинэ
   const openCreate = () => {
     setEditDriver(null);
-    setForm({ phone: "", name: "" });
+    setForm({ phone: "", name: "", regno: "" });
     setModalOpen(true);
   };
 
   // Modal нээх — засах
   const openEdit = (driver: Driver) => {
     setEditDriver(driver);
-    setForm({ phone: driver.phone, name: driver.name });
+    setForm({
+      phone: driver.phone,
+      name: driver.name,
+      regno: driver.regno ?? "",
+    });
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setEditDriver(null);
-    setForm({ phone: "", name: "" });
+    setForm({ phone: "", name: "", regno: "" });
   };
 
   // Хадгалах
@@ -182,7 +186,7 @@ export default function DriversPage() {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "60px 1fr 1fr 100px",
+                  gridTemplateColumns: "60px 1fr 1fr 1fr 100px",
                   gap: 2,
                   px: 2,
                   py: 1,
@@ -191,7 +195,7 @@ export default function DriversPage() {
                   mb: 1,
                 }}
               >
-                {["#", "Утасны дугаар", "Нэр", "Үйлдэл"].map((h) => (
+                {["#", "Утасны дугаар", "Нэр", "Регистр", "Үйлдэл"].map((h) => (
                   <Typography
                     key={h}
                     sx={{
@@ -213,7 +217,7 @@ export default function DriversPage() {
                     key={String(d._id)}
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "60px 1fr 1fr 100px",
+                      gridTemplateColumns: "60px 1fr 1fr 1fr 100px",
                       gap: 2,
                       px: 2,
                       py: 1.5,
@@ -238,6 +242,9 @@ export default function DriversPage() {
                     </Typography>
                     <Typography sx={{ fontWeight: 600, color: "#16181D" }}>
                       {d.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                      {d.regno || "—"}
                     </Typography>
                     <Box sx={{ display: "flex", gap: 0.5 }}>
                       <IconButton
@@ -363,6 +370,7 @@ export default function DriversPage() {
               >
                 НЭР
               </Typography>
+
               <Input
                 placeholder="Бүтэн нэр"
                 value={form.name}
@@ -370,6 +378,26 @@ export default function DriversPage() {
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
                 onKeyDown={(e) => e.key === "Enter" && handleSave()}
+                sx={{ fontSize: "14px" }}
+              />
+            </Box>
+            <Box>
+              <Typography
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#999",
+                  mb: 0.5,
+                }}
+              >
+                РЕГИСТРИЙН ДУГААР
+              </Typography>
+              <Input
+                placeholder="АА00000000"
+                value={(form as any).regno ?? ""}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, regno: e.target.value }))
+                }
                 sx={{ fontSize: "14px" }}
               />
             </Box>

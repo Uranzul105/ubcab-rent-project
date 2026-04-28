@@ -4,6 +4,7 @@ export type Driver = {
   _id: string;
   phone: string;
   name: string;
+  regno: string; 
 };
 
 // GET
