@@ -38,6 +38,7 @@ type DriverEntry = {
   salary: number;
   fuel: number;
   transferred: boolean;
+  regno: string;
 };
 
 export default function ReportPage() {
@@ -50,6 +51,9 @@ export default function ReportPage() {
   const [filterTo, setFilterTo] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [filterTransferred, setFilterTransferred] = useState<
+    "all" | "transferred" | "pending"
+  >("all");
 
   useEffect(() => {
     getOrders()
@@ -80,19 +84,35 @@ export default function ReportPage() {
           salary: d.salary ?? 0,
           fuel: d.fuel ?? 0,
           transferred: d.transferred ?? false,
+          regno: d.regno ?? "",
         })),
       )
-      .filter((d) =>
-        search
+      .filter((d) => {
+        const matchSearch = search
           ? d.name.toLowerCase().includes(search.toLowerCase()) ||
             d.phone.includes(search)
-          : true,
-      )
+          : true;
+        const matchTransferred =
+          filterTransferred === "all"
+            ? true
+            : filterTransferred === "transferred"
+              ? d.transferred
+              : !d.transferred;
+        return matchSearch && matchTransferred;
+      })
       .sort(
         (a, b) =>
           new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(),
       );
-  }, [orders, filterYear, filterMonth, filterFrom, filterTo, search]);
+  }, [
+    orders,
+    filterYear,
+    filterMonth,
+    filterFrom,
+    filterTo,
+    search,
+    filterTransferred,
+  ]);
 
   // Filter өөрчлөгдөхөд хуудас reset
   useMemo(() => {
@@ -209,6 +229,15 @@ export default function ReportPage() {
             >
               ({allEntries.length} бичлэг)
             </Typography>
+            <Select
+              value={filterTransferred}
+              onChange={(_, v) => v && setFilterTransferred(v as any)}
+              sx={{ fontSize: "13px", height: 36, minWidth: 150 }}
+            >
+              <Option value="all">Бүгд</Option>
+              <Option value="transferred">Шилжүүлсэн</Option>
+              <Option value="pending">Шилжүүлээгүй</Option>
+            </Select>
             <Button
               onClick={handleExport}
               sx={{
@@ -364,6 +393,7 @@ export default function ReportPage() {
                   "#",
                   "Огноо",
                   "Утас",
+                  "Регистр",
                   "Жолоочийн нэр",
                   "Захиалагч",
                   "Цалин",
@@ -387,7 +417,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 100px 120px 160px 140px 100px 100px 90px",
+                        "30px 100px 110px 100px 150px 130px 100px 100px 90px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -411,6 +441,9 @@ export default function ReportPage() {
                       }}
                     >
                       {entry.phone}
+                    </Typography>
+                    <Typography sx={{ fontSize: "12px", color: "#888" }}>
+                      {entry.regno || "—"}
                     </Typography>
                     <Typography
                       sx={{

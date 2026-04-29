@@ -61,6 +61,9 @@ export default function OrdersPage() {
   const [filterDriver, setFilterDriver] = useState("");
   const [user, setUser] = useState<any>(null);
   const [page, setPage] = useState(1);
+  const [filterPaid, setFilterPaid] = useState<"all" | "paid" | "unpaid">(
+    "all",
+  );
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -81,7 +84,9 @@ export default function OrdersPage() {
           d.name.toLowerCase().includes(filterDriver.toLowerCase()),
         )
       : true;
-    return matchFrom && matchTo && matchName && matchDriver;
+    const matchPaid =
+      filterPaid === "all" ? true : filterPaid === "paid" ? o.paid : !o.paid;
+    return matchFrom && matchTo && matchName && matchDriver && matchPaid;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / PER_PAGE);
@@ -281,12 +286,27 @@ export default function OrdersPage() {
                   setFilterName("");
                   setFilterDriver("");
                   resetPage();
+                  setFilterPaid("all");
                 }}
                 sx={{ height: 38, borderRadius: "10px", fontSize: "13px" }}
               >
                 Цэвэрлэх
               </Button>
             )}
+            <Select
+              value={filterPaid}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterPaid(v as any);
+                  resetPage();
+                }
+              }}
+              sx={{ fontSize: "13px", height: 38, minWidth: 140 }}
+            >
+              <Option value="all">Бүгд</Option>
+              <Option value="paid">Төлсөн</Option>
+              <Option value="unpaid">Төлөөгүй</Option>
+            </Select>
           </Box>
 
           {loading ? (

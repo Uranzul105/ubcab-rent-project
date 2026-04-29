@@ -74,9 +74,7 @@ export default function CompanyPage() {
         const paid = os
           .filter((o) => o.paid)
           .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
-        const unpaid = os
-          .filter((o) => !o.paid && o.status === "done")
-          .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+        const unpaid = total - paid;
         const totalFuel = os.reduce(
           (s, o) =>
             s + (o.drivers ?? []).reduce((ss, d) => ss + (d.fuel ?? 0), 0),
