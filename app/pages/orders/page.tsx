@@ -25,6 +25,7 @@ import {
   deleteOrder,
   Order,
 } from "@/app/lib/orderService";
+import { createLog } from "@/app/lib/logService";
 
 const STATUSES = [
   { key: "new", label: "Шинэ", color: "primary" },
@@ -121,6 +122,17 @@ export default function OrdersPage() {
     setOrders((prev) =>
       prev.map((o) => (String(o._id) === String(editOrder._id) ? updated : o)),
     );
+    // Log бичих
+    await createLog({
+      action: "update",
+      targetType: "order",
+      targetId: String(editOrder._id),
+      targetName: editOrder.customerName,
+      userId: user?.id ?? 0,
+      userName: user?.name ?? "",
+      userRole: user?.role ?? "",
+      changes: `Захиалга засагдлаа — ${editOrder.customerName} — ${(editOrder.totalAmount ?? 0).toLocaleString()}₮`,
+    });
     closeModal();
   };
 
@@ -142,8 +154,20 @@ export default function OrdersPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Устгах уу?")) return;
+    const order = orders.find((o) => String(o._id) === id);
     await deleteOrder(id);
     setOrders((prev) => prev.filter((o) => String(o._id) !== id));
+    // Log бичих
+    await createLog({
+      action: "delete",
+      targetType: "order",
+      targetId: id,
+      targetName: order?.customerName ?? "",
+      userId: user?.id ?? 0,
+      userName: user?.name ?? "",
+      userRole: user?.role ?? "",
+      changes: `Захиалга устгагдлаа — ${order?.customerName} — ${(order?.totalAmount ?? 0).toLocaleString()}₮`,
+    });
   };
 
   const totalAmount = filteredOrders.reduce(
@@ -556,8 +580,12 @@ export default function OrdersPage() {
                               size="sm"
                               variant="outlined"
                               color="neutral"
-                              onClick={() => openEdit(order)}
-                              sx={{ borderRadius: "8px" }}
+                              disabled={isFullyDone}
+                              onClick={() => !isFullyDone && openEdit(order)}
+                              sx={{
+                                borderRadius: "8px",
+                                opacity: isFullyDone ? 0.3 : 1,
+                              }}
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
@@ -565,8 +593,14 @@ export default function OrdersPage() {
                               size="sm"
                               variant="plain"
                               color="neutral"
-                              onClick={() => handleDelete(String(order._id))}
-                              sx={{ borderRadius: "8px" }}
+                              disabled={isFullyDone}
+                              onClick={() =>
+                                !isFullyDone && handleDelete(String(order._id))
+                              }
+                              sx={{
+                                borderRadius: "8px",
+                                opacity: isFullyDone ? 0.3 : 1,
+                              }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -743,6 +777,7 @@ export default function OrdersPage() {
           <OrderCard
             onSubmit={editOrder ? handleUpdateOrder : handleAddOrder}
             defaultValues={editOrder ?? undefined}
+            currentUser={user}
           />
         </Sheet>
       </Modal>

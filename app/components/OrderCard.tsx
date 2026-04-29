@@ -33,9 +33,14 @@ type OrderData = {
 type Props = {
   onSubmit?: (order: OrderData) => void;
   defaultValues?: Partial<OrderData>;
+  currentUser?: any;
 };
 
-export default function OrderCard({ onSubmit, defaultValues }: Props) {
+export default function OrderCard({
+  onSubmit,
+  defaultValues,
+  currentUser,
+}: Props) {
   const [customerName, setCustomerName] = useState(
     defaultValues?.customerName ?? "",
   );
@@ -158,8 +163,8 @@ export default function OrderCard({ onSubmit, defaultValues }: Props) {
       date,
       customerName,
       totalAmount,
-      managerId: 1,
-      managerName: "Менежер",
+      managerId: currentUser?.id ?? 1,
+      managerName: currentUser?.name ?? "Менежер",
       drivers: driverRows.map((d) => ({
         phone: d.phone,
         name: d.name,

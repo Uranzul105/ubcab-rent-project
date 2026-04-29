@@ -45,9 +45,9 @@ export default function LoginCard() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    localStorage.removeItem("currentUser");
-  }, []);
+  // useEffect(() => {
+  //   localStorage.removeItem("currentUser");
+  // }, []);
 
   const handleLogin = async () => {
     if (!username || !password) {
