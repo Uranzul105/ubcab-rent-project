@@ -211,33 +211,25 @@ export default function ReportPage() {
           }}
         >
           {/* Гарчиг */}
-          <Typography
+          <Box
             sx={{
-              fontSize: "20px",
-              fontWeight: 700,
-              color: "#16181D",
-              mb: 2,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              mb: 2,
             }}
           >
-            Тайлан — Жолоочийн цалин
             <Typography
-              component="span"
-              sx={{ fontSize: "13px", fontWeight: 400, color: "#888", ml: 1 }}
+              sx={{ fontSize: "20px", fontWeight: 700, color: "#16181D" }}
             >
-              ({allEntries.length} бичлэг)
+              Тайлан — Жолоочийн цалин
+              <Typography
+                component="span"
+                sx={{ fontSize: "13px", fontWeight: 400, color: "#888", ml: 1 }}
+              >
+                ({allEntries.length} бичлэг)
+              </Typography>
             </Typography>
-            <Select
-              value={filterTransferred}
-              onChange={(_, v) => v && setFilterTransferred(v as any)}
-              sx={{ fontSize: "13px", height: 36, minWidth: 150 }}
-            >
-              <Option value="all">Бүгд</Option>
-              <Option value="transferred">Шилжүүлсэн</Option>
-              <Option value="pending">Шилжүүлээгүй</Option>
-            </Select>
             <Button
               onClick={handleExport}
               sx={{
@@ -250,7 +242,7 @@ export default function ReportPage() {
             >
               ⬇ Excel татах
             </Button>
-          </Typography>
+          </Box>
 
           {/* Статистик */}
           <Box
@@ -328,7 +320,7 @@ export default function ReportPage() {
                 </Option>
               ))}
             </Select>
-            <Select
+            <Select<number | "all">
               value={filterMonth}
               onChange={(_, v) =>
                 v !== null && setFilterMonth(v as number | "all")
@@ -361,6 +353,15 @@ export default function ReportPage() {
               onChange={(e) => setSearch(e.target.value)}
               sx={{ ...SEL, flex: 1, minWidth: 150 }}
             />
+            <Select
+              value={filterTransferred}
+              onChange={(_, v) => v && setFilterTransferred(v as any)}
+              sx={{ fontSize: "13px", height: 36, minWidth: 150 }}
+            >
+              <Option value="all">Бүгд</Option>
+              <Option value="transferred">Шилжүүлсэн</Option>
+              <Option value="pending">Шилжүүлээгүй</Option>
+            </Select>
           </Box>
 
           {/* Хүснэгт */}
@@ -380,7 +381,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 100px 120px 160px 140px 100px 100px 90px",
+                    "30px 100px 110px 100px 150px 130px 100px 100px 90px",
                   gap: 1,
                   px: 1.5,
                   py: 1,

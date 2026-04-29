@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Chip from "@mui/joy/Chip";
@@ -24,8 +24,10 @@ import {
   updateOrder,
   deleteOrder,
   Order,
+  DriverRow,
 } from "@/app/lib/orderService";
 import { createLog } from "@/app/lib/logService";
+import * as XLSX from "xlsx";
 
 const STATUSES = [
   { key: "new", label: "Шинэ", color: "primary" },
@@ -65,6 +67,10 @@ export default function OrdersPage() {
   const [filterPaid, setFilterPaid] = useState<"all" | "paid" | "unpaid">(
     "all",
   );
+  const [filterManager, setFilterManager] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "new" | "active" | "done" | "cancelled"
+  >("all");
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -87,7 +93,19 @@ export default function OrdersPage() {
       : true;
     const matchPaid =
       filterPaid === "all" ? true : filterPaid === "paid" ? o.paid : !o.paid;
-    return matchFrom && matchTo && matchName && matchDriver && matchPaid;
+    const matchManager =
+      filterManager === "all" ? true : o.managerName === filterManager;
+    const matchStatus =
+      filterStatus === "all" ? true : o.status === filterStatus;
+    return (
+      matchFrom &&
+      matchTo &&
+      matchName &&
+      matchDriver &&
+      matchPaid &&
+      matchManager &&
+      matchStatus
+    );
   });
 
   const totalPages = Math.ceil(filteredOrders.length / PER_PAGE);
@@ -170,22 +188,90 @@ export default function OrdersPage() {
     });
   };
 
-  const totalAmount = filteredOrders.reduce(
+  const handleExport = () => {
+    const rows = [
+      [
+        "#",
+        "Огноо",
+        "Захиалагч",
+        "Менежер",
+        "Жолооч",
+        "Цалин",
+        "Шатахуун",
+        "Нийт дүн",
+        "Төлөв",
+        "Төлбөр",
+      ],
+      ...filteredOrders.map((o, i) => {
+        const sal = (o.drivers ?? []).reduce(
+          (s, d: DriverRow) => s + (d.salary ?? 0),
+          0,
+        );
+        const fuel = (o.drivers ?? []).reduce(
+          (s, d: DriverRow) => s + (d.fuel ?? 0),
+          0,
+        );
+        return [
+          i + 1,
+          o.date,
+          o.customerName,
+          o.managerName,
+          (o.drivers ?? []).map((d: DriverRow) => d.name).join(", "),
+          sal,
+          fuel,
+          o.totalAmount,
+          o.status === "done"
+            ? "Дууссан"
+            : o.status === "active"
+              ? "Хийгдэж байна"
+              : o.status === "cancelled"
+                ? "Цуцалсан"
+                : "Шинэ",
+          o.paid ? "Төлсөн" : "Төлөөгүй",
+        ];
+      }),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [4, 12, 20, 16, 24, 12, 12, 14, 14, 12].map((w) => ({
+      wch: w,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Захиалгууд");
+    XLSX.writeFile(
+      wb,
+      `UBCab_Захиалга_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
+  };
+
+  const filteredOrdersActive = filteredOrders.filter(
+    (o) => o.status !== "cancelled",
+  );
+  const totalAmount = filteredOrdersActive.reduce(
     (s, o) => s + (o.totalAmount ?? 0),
     0,
   );
-  const totalSalarySum = filteredOrders.reduce(
-    (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.salary ?? 0), 0),
+  const totalSalarySum = filteredOrdersActive.reduce(
+    (s, o) =>
+      s +
+      (o.drivers ?? []).reduce((ss, d: DriverRow) => ss + (d.salary ?? 0), 0),
     0,
   );
-  const totalFuel = filteredOrders.reduce(
-    (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.fuel ?? 0), 0),
+  const totalFuel = filteredOrdersActive.reduce(
+    (s, o) =>
+      s + (o.drivers ?? []).reduce((ss, d: DriverRow) => ss + (d.fuel ?? 0), 0),
     0,
   );
-  const totalPaid = filteredOrders
+  const totalPaid = filteredOrdersActive
     .filter((o) => o.paid)
     .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
   const totalUnpaid = totalAmount - totalPaid;
+
+  const managers = useMemo(() => {
+    const names = [
+      ...new Set(orders.map((o) => o.managerName).filter(Boolean)),
+    ];
+    return names;
+  }, [orders]);
 
   return (
     <div
@@ -212,6 +298,7 @@ export default function OrdersPage() {
             boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
           }}
         >
+          {/* 1-р мөр: Гарчиг + товч */}
           <Box
             sx={{
               display: "flex",
@@ -231,6 +318,14 @@ export default function OrdersPage() {
                 ({filteredOrders.length} захиалга)
               </Typography>
             </Typography>
+            <Button
+              onClick={handleExport}
+              variant="outlined"
+              color="neutral"
+              sx={{ borderRadius: "40px", fontWeight: 700, fontSize: "13px" }}
+            >
+              ⬇ Excel
+            </Button>
             {user?.role !== "admin" && (
               <Button
                 onClick={openCreate}
@@ -248,13 +343,89 @@ export default function OrdersPage() {
             )}
           </Box>
 
+          {/* 2-р мөр: Төлбөр + Менежер */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              mb: 1.5,
+              justifyContent: "flex-end",
+              alignContent: "center",
+            }}
+          >
+            <Select
+              value={filterPaid}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterPaid(v as any);
+                  resetPage();
+                }
+              }}
+              sx={{
+                fontSize: "13px",
+                height: 36,
+                minWidth: 120,
+                width: 120,
+                flexShrink: 0,
+              }}
+            >
+              <Option value="all">Бүгд</Option>
+              <Option value="paid">Төлсөн</Option>
+              <Option value="unpaid">Төлөөгүй</Option>
+            </Select>
+            <Select
+              value={filterStatus}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterStatus(v as any);
+                  resetPage();
+                }
+              }}
+              sx={{ fontSize: "13px", height: 36, width: 150, flexShrink: 0 }}
+            >
+              <Option value="all">Бүх төлөв</Option>
+              <Option value="new">Шинэ</Option>
+              <Option value="active">Хийгдэж байна</Option>
+              <Option value="done">Дууссан</Option>
+              <Option value="cancelled">Цуцалсан</Option>
+            </Select>
+            <Select
+              value={filterManager}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterManager(v as string);
+                  resetPage();
+                }
+              }}
+              sx={{
+                fontSize: "13px",
+                height: 36,
+                minWidth: 160,
+                width: 160,
+                flexShrink: 0,
+              }}
+            >
+              <Option value="all">Бүх менежер</Option>
+              {managers.map((m) => (
+                <Option key={m} value={m}>
+                  {m}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+
+          {/* 3-р мөр: Огноо + Нэр хайлт */}
           <Box
             sx={{
               display: "flex",
               gap: 1,
               mb: 2,
-              flexWrap: "wrap",
+              flexWrap: "nowrap",
               alignItems: "center",
+              overflowX: "auto",
+              "&::-webkit-scrollbar": { display: "none" },
+              msOverflowStyle: "none",
+              scrollbarWidth: "none",
             }}
           >
             <Input
@@ -264,9 +435,11 @@ export default function OrdersPage() {
                 setFilterFrom(e.target.value);
                 resetPage();
               }}
-              sx={{ fontSize: "13px", height: 38, width: 160 }}
+              sx={{ fontSize: "13px", height: 36, width: 145, flexShrink: 0 }}
             />
-            <Typography sx={{ fontSize: "13px", color: "#888" }}>-</Typography>
+            <Typography sx={{ fontSize: "13px", color: "#888", flexShrink: 0 }}>
+              -
+            </Typography>
             <Input
               type="date"
               value={filterTo}
@@ -274,7 +447,7 @@ export default function OrdersPage() {
                 setFilterTo(e.target.value);
                 resetPage();
               }}
-              sx={{ fontSize: "13px", height: 38, width: 160 }}
+              sx={{ fontSize: "13px", height: 36, width: 145, flexShrink: 0 }}
             />
             <Input
               placeholder="Захиалагчийн нэр..."
@@ -286,7 +459,13 @@ export default function OrdersPage() {
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{ fontSize: "13px", height: 38, flex: 1, minWidth: 150 }}
+              sx={{
+                fontSize: "13px",
+                height: 36,
+                flex: 1,
+                minWidth: 160,
+                flexShrink: 1,
+              }}
             />
             <Input
               placeholder="Жолоочийн нэр..."
@@ -298,7 +477,13 @@ export default function OrdersPage() {
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{ fontSize: "13px", height: 38, flex: 1, minWidth: 150 }}
+              sx={{
+                fontSize: "13px",
+                height: 36,
+                flex: 1,
+                minWidth: 160,
+                flexShrink: 1,
+              }}
             />
             {(filterFrom || filterTo || filterName || filterDriver) && (
               <Button
@@ -311,26 +496,19 @@ export default function OrdersPage() {
                   setFilterDriver("");
                   resetPage();
                   setFilterPaid("all");
+                  setFilterManager("all");
+                  setFilterStatus("all");
                 }}
-                sx={{ height: 38, borderRadius: "10px", fontSize: "13px" }}
+                sx={{
+                  height: 36,
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  flexShrink: 0,
+                }}
               >
                 Цэвэрлэх
               </Button>
             )}
-            <Select
-              value={filterPaid}
-              onChange={(_, v) => {
-                if (v) {
-                  setFilterPaid(v as any);
-                  resetPage();
-                }
-              }}
-              sx={{ fontSize: "13px", height: 38, minWidth: 140 }}
-            >
-              <Option value="all">Бүгд</Option>
-              <Option value="paid">Төлсөн</Option>
-              <Option value="unpaid">Төлөөгүй</Option>
-            </Select>
           </Box>
 
           {loading ? (
@@ -355,13 +533,18 @@ export default function OrdersPage() {
                     (order.drivers ?? []).every((d) => d.transferred);
                   const isFullyDone =
                     order.status === "done" && order.paid && allTransferred;
+                  const isCancelled = order.status === "cancelled";
 
                   return (
                     <Box
                       key={String(order._id)}
                       sx={{
-                        background: isFullyDone ? "#F0FDF4" : "#fff",
-                        border: `1px solid ${isFullyDone ? "#BBF7D0" : "#F0F0F0"}`,
+                        background: isCancelled
+                          ? "#FFF5F5"
+                          : isFullyDone
+                            ? "#F0FDF4"
+                            : "#fff",
+                        border: `1px solid ${isCancelled ? "#FECACA" : isFullyDone ? "#BBF7D0" : "#F0F0F0"}`,
                         borderRadius: "12px",
                         padding: "12px 16px",
                         boxShadow: "0 1px 4px rgba(0,0,0,.03)",
@@ -402,7 +585,7 @@ export default function OrdersPage() {
                           </Typography>
                           <StatusBadge status={order.status} />
                           <Typography sx={{ fontSize: "12px", color: "#bbb" }}>
-                            {order.date}
+                            {order.date} · 👤 {order.managerName}
                           </Typography>
                         </Box>
 
@@ -473,7 +656,11 @@ export default function OrdersPage() {
 
                       {user?.role === "admin" ? (
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
                         >
                           <div
                             onClick={() => handleTogglePaid(String(order._id))}
@@ -485,6 +672,7 @@ export default function OrdersPage() {
                               position: "relative",
                               transition: "background .2s",
                               cursor: "pointer",
+                              flexShrink: 0,
                             }}
                           >
                             <div
@@ -506,7 +694,7 @@ export default function OrdersPage() {
                               fontSize: "12px",
                               fontWeight: 700,
                               color: order.paid ? "#16A34A" : "#9CA3AF",
-                              whiteSpace: "nowrap",
+                              minWidth: 60,
                             }}
                           >
                             {order.paid ? "Төлсөн" : "Төлөөгүй"}
@@ -514,28 +702,30 @@ export default function OrdersPage() {
                         </Box>
                       ) : (
                         <>
-                          <Select
-                            size="sm"
-                            value={order.status}
-                            onChange={(_, val) =>
-                              val &&
-                              handleStatusChange(
-                                String(order._id),
-                                val as StatusKey,
-                              )
-                            }
-                            sx={{
-                              minWidth: 150,
-                              fontSize: "13px",
-                              fontWeight: 500,
-                            }}
-                          >
-                            {STATUSES.map((s) => (
-                              <Option key={s.key} value={s.key}>
-                                {s.label}
-                              </Option>
-                            ))}
-                          </Select>
+                          <Box sx={{ width: 150, flexShrink: 0 }}>
+                            <Select
+                              size="sm"
+                              value={order.status}
+                              onChange={(_, val) =>
+                                val &&
+                                handleStatusChange(
+                                  String(order._id),
+                                  val as StatusKey,
+                                )
+                              }
+                              sx={{
+                                fontSize: "13px",
+                                fontWeight: 500,
+                                width: "100%",
+                              }}
+                            >
+                              {STATUSES.map((s) => (
+                                <Option key={s.key} value={s.key}>
+                                  {s.label}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Box>
                           <Box
                             sx={{
                               display: "flex",
@@ -569,7 +759,7 @@ export default function OrdersPage() {
                                 fontSize: "12px",
                                 fontWeight: 700,
                                 color: order.paid ? "#16A34A" : "#9CA3AF",
-                                whiteSpace: "nowrap",
+                                minWidth: 60,
                               }}
                             >
                               {order.paid ? "Төлсөн" : "Төлөөгүй"}
@@ -580,30 +770,30 @@ export default function OrdersPage() {
                               size="sm"
                               variant="outlined"
                               color="neutral"
-                              disabled={isFullyDone}
+                              disabled={allTransferred}
                               onClick={() => !isFullyDone && openEdit(order)}
                               sx={{
                                 borderRadius: "8px",
-                                opacity: isFullyDone ? 0.3 : 1,
+                                opacity: allTransferred ? 0.3 : 1,
                               }}
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
-                            <IconButton
+                            {/* <IconButton
                               size="sm"
                               variant="plain"
                               color="neutral"
-                              disabled={isFullyDone}
+                              disabled={allTransferred}
                               onClick={() =>
                                 !isFullyDone && handleDelete(String(order._id))
                               }
                               sx={{
                                 borderRadius: "8px",
-                                opacity: isFullyDone ? 0.3 : 1,
+                                opacity: allTransferred ? 0.3 : 1,
                               }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
+                            </IconButton> */}
                           </Box>
                         </>
                       )}
