@@ -5,6 +5,7 @@ import orderRoutes from "./routes/orderRoutes";
 import driverRoutes from "./routes/driverRoutes";
 import authRoutes from "./routes/authRoutes";
 import logRoutes from "./routes/logRoutes";  
+import companyRoutes from "./routes/companyRoutes"; 
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +18,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/logs", logRoutes); 
+app.use("/api/companies", companyRoutes);
 
 
 app.get("/", (req, res) => {
