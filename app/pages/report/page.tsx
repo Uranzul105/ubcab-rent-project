@@ -42,7 +42,7 @@ type DriverEntry = {
   regno: string;
 };
 
-export default function ReportPage() {
+export default function Page() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const now = new Date();
