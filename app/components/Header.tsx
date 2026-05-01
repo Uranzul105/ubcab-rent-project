@@ -69,11 +69,10 @@ export default function Header() {
           <span className="menu" onClick={() => router.push("/pages/company")}>
             Байгууллага
           </span>
-          {user.role === "admin" && (
-            <span className="menu" onClick={() => router.push("/pages/report")}>
-              Тайлан
-            </span>
-          )}
+
+          <span className="menu" onClick={() => router.push("/pages/report")}>
+            Тайлан
+          </span>
         </div>
       ) : (
         /* Нэвтрээгүй үед зөвхөн Бидний тухай */

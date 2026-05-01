@@ -32,13 +32,21 @@ export default function DriversPage() {
   const [page, setPage] = useState(1);
   const PER = 15;
 
+  // Custom confirm modal
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+
+  const showConfirm = (action: () => void) => {
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  };
+
   useEffect(() => {
     getDrivers()
       .then(setDrivers)
       .finally(() => setLoading(false));
   }, []);
 
-  // Хайлт
   const filtered = useMemo(
     () =>
       drivers.filter(
@@ -52,14 +60,12 @@ export default function DriversPage() {
   const pages = Math.ceil(filtered.length / PER);
   const shown = filtered.slice((page - 1) * PER, page * PER);
 
-  // Modal нээх — шинэ
   const openCreate = () => {
     setEditDriver(null);
     setForm({ phone: "", name: "", regno: "" });
     setModalOpen(true);
   };
 
-  // Modal нээх — засах
   const openEdit = (driver: Driver) => {
     setEditDriver(driver);
     setForm({
@@ -76,7 +82,6 @@ export default function DriversPage() {
     setForm({ phone: "", name: "", regno: "" });
   };
 
-  // Хадгалах
   const handleSave = async () => {
     if (!form.phone || !form.name) {
       alert("Утас болон нэрийг бөглөнө үү");
@@ -96,11 +101,11 @@ export default function DriversPage() {
     closeModal();
   };
 
-  // Устгах
-  const handleDelete = async (id: string) => {
-    if (!confirm("Устгах уу?")) return;
-    await deleteDriver(id);
-    setDrivers((prev) => prev.filter((d) => String(d._id) !== id));
+  const handleDelete = (id: string) => {
+    showConfirm(async () => {
+      await deleteDriver(id);
+      setDrivers((prev) => prev.filter((d) => String(d._id) !== id));
+    });
   };
 
   return (
@@ -370,7 +375,6 @@ export default function DriversPage() {
               >
                 НЭР
               </Typography>
-
               <Input
                 placeholder="Бүтэн нэр"
                 value={form.name}
@@ -383,7 +387,7 @@ export default function DriversPage() {
             </Box>
             <Box>
               <Typography
-                style={{
+                sx={{
                   fontSize: "11px",
                   fontWeight: 700,
                   color: "#999",
@@ -394,7 +398,7 @@ export default function DriversPage() {
               </Typography>
               <Input
                 placeholder="АА00000000"
-                value={(form as any).regno ?? ""}
+                value={form.regno ?? ""}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, regno: e.target.value }))
                 }
@@ -423,6 +427,58 @@ export default function DriversPage() {
               }}
             >
               Хадгалах
+            </Button>
+          </Box>
+        </Sheet>
+      </Modal>
+
+      {/* Confirm Modal */}
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+      >
+        <Sheet
+          sx={{
+            borderRadius: "16px",
+            p: 3,
+            maxWidth: 360,
+            width: "90%",
+            outline: "none",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          }}
+        >
+          <Typography
+            sx={{ fontSize: "16px", fontWeight: 700, color: "#16181D", mb: 1 }}
+          >
+            Анхааруулга
+          </Typography>
+          <Typography sx={{ fontSize: "14px", color: "#555", mb: 3 }}>
+            Жолоочийг устгах уу?
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+            <Button
+              variant="outlined"
+              color="neutral"
+              onClick={() => setConfirmOpen(false)}
+              sx={{ borderRadius: "10px", fontSize: "13px" }}
+            >
+              Цуцлах
+            </Button>
+            <Button
+              onClick={() => {
+                confirmAction();
+                setConfirmOpen(false);
+              }}
+              sx={{
+                borderRadius: "10px",
+                fontSize: "13px",
+                backgroundColor: "#DC2626",
+                color: "#fff",
+                "&:hover": { backgroundColor: "#B91C1C" },
+              }}
+            >
+              Устгах
             </Button>
           </Box>
         </Sheet>

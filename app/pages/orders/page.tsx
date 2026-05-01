@@ -15,7 +15,6 @@ import Sheet from "@mui/joy/Sheet";
 import Header from "@/app/components/Header";
 import OrderCard from "@/app/components/OrderCard";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -37,7 +36,7 @@ const STATUSES = [
 ] as const;
 
 type StatusKey = (typeof STATUSES)[number]["key"];
-const PER_PAGE = 15;
+const PER_PAGE = 10;
 
 function StatusBadge({ status }: { status: StatusKey }) {
   const s = STATUSES.find((x) => x.key === status) ?? STATUSES[0];
@@ -72,6 +71,25 @@ export default function OrdersPage() {
     "all" | "new" | "active" | "done" | "cancelled"
   >("all");
 
+  // Custom confirm modal
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  const [confirmVariant, setConfirmVariant] = useState<"danger" | "success">(
+    "danger",
+  );
+
+  const showConfirm = (
+    message: string,
+    action: () => void,
+    variant: "danger" | "success" = "danger",
+  ) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setConfirmVariant(variant);
+    setConfirmOpen(true);
+  };
+
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("currentUser") || "null");
     setUser(u);
@@ -79,6 +97,13 @@ export default function OrdersPage() {
       .then(setOrders)
       .finally(() => setLoading(false));
   }, []);
+
+  const managers = useMemo(() => {
+    const names = [
+      ...new Set(orders.map((o) => o.managerName).filter(Boolean)),
+    ];
+    return names;
+  }, [orders]);
 
   const filteredOrders = orders.filter((o) => {
     const matchFrom = filterFrom ? o.date >= filterFrom : true;
@@ -140,7 +165,6 @@ export default function OrdersPage() {
     setOrders((prev) =>
       prev.map((o) => (String(o._id) === String(editOrder._id) ? updated : o)),
     );
-    // Log бичих
     await createLog({
       action: "update",
       targetType: "order",
@@ -171,21 +195,35 @@ export default function OrdersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Устгах уу?")) return;
-    const order = orders.find((o) => String(o._id) === id);
-    await deleteOrder(id);
-    setOrders((prev) => prev.filter((o) => String(o._id) !== id));
-    // Log бичих
-    await createLog({
-      action: "delete",
-      targetType: "order",
-      targetId: id,
-      targetName: order?.customerName ?? "",
-      userId: user?.id ?? 0,
-      userName: user?.name ?? "",
-      userRole: user?.role ?? "",
-      changes: `Захиалга устгагдлаа — ${order?.customerName} — ${(order?.totalAmount ?? 0).toLocaleString()}₮`,
-    });
+    showConfirm(
+      "Захиалгыг устгах уу?",
+      async () => {
+        const order = orders.find((o) => String(o._id) === id);
+        await deleteOrder(id);
+        setOrders((prev) => prev.filter((o) => String(o._id) !== id));
+        await createLog({
+          action: "delete",
+          targetType: "order",
+          targetId: id,
+          targetName: order?.customerName ?? "",
+          userId: user?.id ?? 0,
+          userName: user?.name ?? "",
+          userRole: user?.role ?? "",
+          changes: `Захиалга устгагдлаа — ${order?.customerName} — ${(order?.totalAmount ?? 0).toLocaleString()}₮`,
+        });
+      },
+      "danger",
+    );
+  };
+
+  const handleSendToFinance = (orderId: string) => {
+    showConfirm(
+      "Тайлан рүү шилжүүлэх үү?",
+      () => {
+        window.location.href = `/pages/report?ids=${orderId}`;
+      },
+      "success",
+    );
   };
 
   const handleExport = () => {
@@ -266,12 +304,7 @@ export default function OrdersPage() {
     .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
   const totalUnpaid = totalAmount - totalPaid;
 
-  const managers = useMemo(() => {
-    const names = [
-      ...new Set(orders.map((o) => o.managerName).filter(Boolean)),
-    ];
-    return names;
-  }, [orders]);
+  const canSend = (status: string) => status === "active" || status === "done";
 
   return (
     <div
@@ -288,7 +321,7 @@ export default function OrdersPage() {
         <Header />
       </div>
 
-      <Box sx={{ maxWidth: 960, margin: "0 auto", padding: "24px" }}>
+      <Box sx={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
         <Box
           sx={{
             background: "rgba(255,255,255,0.95)",
@@ -318,39 +351,41 @@ export default function OrdersPage() {
                 ({filteredOrders.length} захиалга)
               </Typography>
             </Typography>
-            <Button
-              onClick={handleExport}
-              variant="outlined"
-              color="neutral"
-              sx={{ borderRadius: "40px", fontWeight: 700, fontSize: "13px" }}
-            >
-              ⬇ Excel
-            </Button>
-            {user?.role !== "admin" && (
+            <Box sx={{ display: "flex", gap: 1 }}>
               <Button
-                onClick={openCreate}
-                startDecorator={<AddIcon />}
-                sx={{
-                  backgroundColor: "#facc15",
-                  color: "#000",
-                  fontWeight: 700,
-                  borderRadius: "40px",
-                  "&:hover": { backgroundColor: "#eab308" },
-                }}
+                onClick={handleExport}
+                variant="outlined"
+                color="neutral"
+                sx={{ borderRadius: "40px", fontWeight: 700, fontSize: "13px" }}
               >
-                Шинэ захиалга
+                Excel
               </Button>
-            )}
+              {user?.role !== "admin" && (
+                <Button
+                  onClick={openCreate}
+                  startDecorator={<AddIcon />}
+                  sx={{
+                    backgroundColor: "#facc15",
+                    color: "#000",
+                    fontWeight: 700,
+                    borderRadius: "40px",
+                    "&:hover": { backgroundColor: "#eab308" },
+                  }}
+                >
+                  Шинэ захиалга
+                </Button>
+              )}
+            </Box>
           </Box>
 
-          {/* 2-р мөр: Төлбөр + Менежер */}
+          {/* 2-р мөр: Төлбөр + Төлөв + Менежер — баруун тийш */}
           <Box
             sx={{
               display: "flex",
               gap: 1,
               mb: 1.5,
               justifyContent: "flex-end",
-              alignContent: "center",
+              alignItems: "center",
             }}
           >
             <Select
@@ -361,13 +396,7 @@ export default function OrdersPage() {
                   resetPage();
                 }
               }}
-              sx={{
-                fontSize: "13px",
-                height: 36,
-                minWidth: 120,
-                width: 120,
-                flexShrink: 0,
-              }}
+              sx={{ fontSize: "13px", height: 36, width: 120, flexShrink: 0 }}
             >
               <Option value="all">Бүгд</Option>
               <Option value="paid">Төлсөн</Option>
@@ -397,13 +426,7 @@ export default function OrdersPage() {
                   resetPage();
                 }
               }}
-              sx={{
-                fontSize: "13px",
-                height: 36,
-                minWidth: 160,
-                width: 160,
-                flexShrink: 0,
-              }}
+              sx={{ fontSize: "13px", height: 36, width: 160, flexShrink: 0 }}
             >
               <Option value="all">Бүх менежер</Option>
               {managers.map((m) => (
@@ -435,7 +458,7 @@ export default function OrdersPage() {
                 setFilterFrom(e.target.value);
                 resetPage();
               }}
-              sx={{ fontSize: "13px", height: 36, width: 145, flexShrink: 0 }}
+              sx={{ fontSize: "13px", height: 36, width: 180, flexShrink: 0 }}
             />
             <Typography sx={{ fontSize: "13px", color: "#888", flexShrink: 0 }}>
               -
@@ -447,7 +470,7 @@ export default function OrdersPage() {
                 setFilterTo(e.target.value);
                 resetPage();
               }}
-              sx={{ fontSize: "13px", height: 36, width: 145, flexShrink: 0 }}
+              sx={{ fontSize: "13px", height: 36, width: 180, flexShrink: 0 }}
             />
             <Input
               placeholder="Захиалагчийн нэр..."
@@ -459,13 +482,7 @@ export default function OrdersPage() {
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{
-                fontSize: "13px",
-                height: 36,
-                flex: 1,
-                minWidth: 160,
-                flexShrink: 1,
-              }}
+              sx={{ fontSize: "13px", height: 36, flex: 1, minWidth: 160 }}
             />
             <Input
               placeholder="Жолоочийн нэр..."
@@ -477,15 +494,15 @@ export default function OrdersPage() {
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{
-                fontSize: "13px",
-                height: 36,
-                flex: 1,
-                minWidth: 160,
-                flexShrink: 1,
-              }}
+              sx={{ fontSize: "13px", height: 36, flex: 1, minWidth: 160 }}
             />
-            {(filterFrom || filterTo || filterName || filterDriver) && (
+            {(filterFrom ||
+              filterTo ||
+              filterName ||
+              filterDriver ||
+              filterPaid !== "all" ||
+              filterManager !== "all" ||
+              filterStatus !== "all") && (
               <Button
                 variant="outlined"
                 color="neutral"
@@ -494,10 +511,10 @@ export default function OrdersPage() {
                   setFilterTo("");
                   setFilterName("");
                   setFilterDriver("");
-                  resetPage();
                   setFilterPaid("all");
                   setFilterManager("all");
                   setFilterStatus("all");
+                  resetPage();
                 }}
                 sx={{
                   height: 36,
@@ -565,13 +582,19 @@ export default function OrdersPage() {
                       </Typography>
 
                       <Box sx={{ flex: 1 }}>
+                        {/* 1-р мөр: Огноо + Менежер */}
+                        <Typography
+                          sx={{ fontSize: "12px", color: "#bbb", mb: 0.3 }}
+                        >
+                          {order.date} · 👤 {order.managerName}
+                        </Typography>
+                        {/* 2-р мөр: Нэр + Төлөв */}
                         <Box
                           sx={{
                             display: "flex",
                             alignItems: "center",
                             gap: 1,
                             mb: 0.5,
-                            flexWrap: "wrap",
                           }}
                         >
                           <Typography
@@ -584,11 +607,8 @@ export default function OrdersPage() {
                             {order.customerName}
                           </Typography>
                           <StatusBadge status={order.status} />
-                          <Typography sx={{ fontSize: "12px", color: "#bbb" }}>
-                            {order.date} · 👤 {order.managerName}
-                          </Typography>
                         </Box>
-
+                        {/* 3-р мөр: Жолооч */}
                         <Box
                           sx={{
                             display: "flex",
@@ -656,11 +676,7 @@ export default function OrdersPage() {
 
                       {user?.role === "admin" ? (
                         <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                          }}
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
                           <div
                             onClick={() => handleTogglePaid(String(order._id))}
@@ -726,52 +742,32 @@ export default function OrdersPage() {
                               ))}
                             </Select>
                           </Box>
+
+                          <Typography
+                            sx={{
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              color: order.paid ? "#16A34A" : "#9CA3AF",
+                              minWidth: 60,
+                              mt: 0.3,
+                            }}
+                          >
+                            {order.paid ? "Төлсөн" : "Төлөөгүй"}
+                          </Typography>
+
                           <Box
                             sx={{
                               display: "flex",
+                              gap: 0.5,
                               alignItems: "center",
-                              gap: 1,
                             }}
                           >
-                            <div
-                              style={{
-                                width: 36,
-                                height: 20,
-                                borderRadius: 10,
-                                background: order.paid ? "#16A34A" : "#D1D5DB",
-                                position: "relative",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: 2,
-                                  left: order.paid ? 18 : 2,
-                                  width: 16,
-                                  height: 16,
-                                  borderRadius: "50%",
-                                  background: "#fff",
-                                }}
-                              />
-                            </div>
-                            <Typography
-                              sx={{
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                color: order.paid ? "#16A34A" : "#9CA3AF",
-                                minWidth: 60,
-                              }}
-                            >
-                              {order.paid ? "Төлсөн" : "Төлөөгүй"}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: "flex", gap: 0.5 }}>
                             <IconButton
                               size="sm"
                               variant="outlined"
                               color="neutral"
                               disabled={allTransferred}
-                              onClick={() => !isFullyDone && openEdit(order)}
+                              onClick={() => !allTransferred && openEdit(order)}
                               sx={{
                                 borderRadius: "8px",
                                 opacity: allTransferred ? 0.3 : 1,
@@ -779,21 +775,33 @@ export default function OrdersPage() {
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
-                            {/* <IconButton
+                            <Button
                               size="sm"
-                              variant="plain"
-                              color="neutral"
-                              disabled={allTransferred}
+                              disabled={!canSend(order.status)}
                               onClick={() =>
-                                !isFullyDone && handleDelete(String(order._id))
+                                canSend(order.status) &&
+                                handleSendToFinance(String(order._id))
                               }
                               sx={{
+                                fontSize: "11px",
                                 borderRadius: "8px",
-                                opacity: allTransferred ? 0.3 : 1,
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                                backgroundColor: canSend(order.status)
+                                  ? "#16A34A"
+                                  : "#F1F5F9",
+                                color: canSend(order.status)
+                                  ? "#fff"
+                                  : "#9CA3AF",
+                                "&:hover": {
+                                  backgroundColor: canSend(order.status)
+                                    ? "#15803D"
+                                    : "#F1F5F9",
+                                },
                               }}
                             >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton> */}
+                              Шилжүүлэг
+                            </Button>
                           </Box>
                         </>
                       )}
@@ -881,7 +889,7 @@ export default function OrdersPage() {
                   mt: 1,
                 }}
               >
-                {(page - 1) * PER_PAGE + 1}–
+                {(page - 1) * PER_PAGE + 1}-
                 {Math.min(page * PER_PAGE, filteredOrders.length)} /{" "}
                 {filteredOrders.length}
               </Typography>
@@ -935,6 +943,7 @@ export default function OrdersPage() {
         </Box>
       </Box>
 
+      {/* Order Modal */}
       <Modal
         open={modalOpen}
         onClose={closeModal}
@@ -969,6 +978,62 @@ export default function OrdersPage() {
             defaultValues={editOrder ?? undefined}
             currentUser={user}
           />
+        </Sheet>
+      </Modal>
+
+      {/* Custom Confirm Modal */}
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+      >
+        <Sheet
+          sx={{
+            borderRadius: "16px",
+            p: 3,
+            maxWidth: 360,
+            width: "90%",
+            outline: "none",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          }}
+        >
+          <Typography
+            sx={{ fontSize: "16px", fontWeight: 700, color: "#16181D", mb: 1 }}
+          >
+            Анхааруулга
+          </Typography>
+          <Typography sx={{ fontSize: "14px", color: "#555", mb: 3 }}>
+            {confirmMessage}
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+            <Button
+              variant="outlined"
+              color="neutral"
+              onClick={() => setConfirmOpen(false)}
+              sx={{ borderRadius: "10px", fontSize: "13px" }}
+            >
+              Цуцлах
+            </Button>
+            <Button
+              onClick={() => {
+                confirmAction();
+                setConfirmOpen(false);
+              }}
+              sx={{
+                borderRadius: "10px",
+                fontSize: "13px",
+                backgroundColor:
+                  confirmVariant === "danger" ? "#DC2626" : "#16A34A",
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor:
+                    confirmVariant === "danger" ? "#B91C1C" : "#15803D",
+                },
+              }}
+            >
+              {confirmVariant === "danger" ? "Устгах" : "Тийм"}
+            </Button>
+          </Box>
         </Sheet>
       </Modal>
     </div>

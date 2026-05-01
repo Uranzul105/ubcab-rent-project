@@ -10,6 +10,7 @@ import Button from "@mui/joy/Button";
 import Header from "@/app/components/Header";
 import { getOrders, updateOrder, Order } from "@/app/lib/orderService";
 import * as XLSX from "xlsx";
+import { useSearchParams } from "next/navigation";
 
 const MONTHS = [
   "1-р сар",
@@ -26,7 +27,7 @@ const MONTHS = [
   "12-р сар",
 ];
 
-const PER_PAGE = 20;
+const PER_PAGE = 15;
 
 type DriverEntry = {
   orderId: string;
@@ -54,8 +55,17 @@ export default function ReportPage() {
   const [filterTransferred, setFilterTransferred] = useState<
     "all" | "transferred" | "pending"
   >("all");
+  const [user, setUser] = useState<any>(null);
+
+  const searchParams = useSearchParams();
+  const passedIds = useMemo(
+    () => searchParams.get("ids")?.split(",").filter(Boolean) ?? [],
+    [searchParams],
+  );
 
   useEffect(() => {
+    const u = JSON.parse(localStorage.getItem("currentUser") || "null");
+    setUser(u);
     getOrders()
       .then(setOrders)
       .finally(() => setLoading(false));
@@ -64,6 +74,7 @@ export default function ReportPage() {
   const allEntries: DriverEntry[] = useMemo(() => {
     return orders
       .filter((o) => {
+        if (passedIds.length > 0) return passedIds.includes(String(o._id));
         if (o.status !== "done") return false;
         const d = new Date(o.date);
         const matchYear = d.getFullYear() === filterYear;
@@ -112,12 +123,12 @@ export default function ReportPage() {
     filterTo,
     search,
     filterTransferred,
+    passedIds,
   ]);
 
-  // Filter өөрчлөгдөхөд хуудас reset
   useMemo(() => {
     setPage(1);
-  }, [filterYear, filterMonth, filterFrom, filterTo, search]);
+  }, [filterYear, filterMonth, filterFrom, filterTo, search, passedIds]);
 
   const totalPages = Math.ceil(allEntries.length / PER_PAGE);
   const driverEntries = allEntries.slice(
@@ -230,19 +241,57 @@ export default function ReportPage() {
                 ({allEntries.length} бичлэг)
               </Typography>
             </Typography>
-            <Button
-              onClick={handleExport}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {passedIds.length > 0 && (
+                <Button
+                  variant="outlined"
+                  color="neutral"
+                  onClick={() => (window.location.href = "/pages/report")}
+                  sx={{
+                    borderRadius: "40px",
+                    fontWeight: 700,
+                    fontSize: "13px",
+                  }}
+                >
+                  Бүх тайлан
+                </Button>
+              )}
+              <Button
+                onClick={handleExport}
+                sx={{
+                  backgroundColor: "#16A34A",
+                  color: "#fff",
+                  borderRadius: "40px",
+                  fontWeight: 700,
+                  "&:hover": { backgroundColor: "#15803D" },
+                }}
+              >
+                Excel татах
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Шилжүүлэгдэж байгаа мэдэгдэл */}
+          {passedIds.length > 0 && (
+            <Box
               sx={{
-                backgroundColor: "#16A34A",
-                color: "#fff",
-                borderRadius: "40px",
-                fontWeight: 700,
-                "&:hover": { backgroundColor: "#15803D" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                mb: 2,
+                background: "#F0FDF4",
+                borderRadius: "10px",
+                padding: "10px 16px",
+                border: "1px solid #BBF7D0",
               }}
             >
-              ⬇ Excel татах
-            </Button>
-          </Box>
+              <Typography
+                sx={{ fontSize: "13px", color: "#16A34A", fontWeight: 600 }}
+              >
+                ✓ {passedIds.length} захиалга шилжүүлэх хүсэлт илгээгдлээ.
+              </Typography>
+            </Box>
+          )}
 
           {/* Статистик */}
           <Box
@@ -299,70 +348,95 @@ export default function ReportPage() {
             ))}
           </Box>
 
-          {/* Filter */}
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              mb: 2,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <Select
-              value={filterYear}
-              onChange={(_, v) => v && setFilterYear(v)}
-              sx={SEL}
+          {/* Filter — passedIds байхгүй үед л харагдана */}
+          {passedIds.length === 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                gap: 1,
+                mb: 2,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
             >
-              {[2024, 2025, 2026].map((y) => (
-                <Option key={y} value={y}>
-                  {y} он
-                </Option>
-              ))}
-            </Select>
-            <Select<number | "all">
-              value={filterMonth}
-              onChange={(_, v) =>
-                v !== null && setFilterMonth(v as number | "all")
-              }
-              sx={{ ...SEL, minWidth: 110 }}
-            >
-              <Option value="all">Бүх сар</Option>
-              {MONTHS.map((m, i) => (
-                <Option key={i} value={i}>
-                  {m}
-                </Option>
-              ))}
-            </Select>
-            <Input
-              type="date"
-              value={filterFrom}
-              onChange={(e) => setFilterFrom(e.target.value)}
-              sx={{ ...SEL, width: 145 }}
-            />
-            <Typography sx={{ fontSize: "13px", color: "#888" }}>—</Typography>
-            <Input
-              type="date"
-              value={filterTo}
-              onChange={(e) => setFilterTo(e.target.value)}
-              sx={{ ...SEL, width: 145 }}
-            />
-            <Input
-              placeholder="Нэр эсвэл утас..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ ...SEL, flex: 1, minWidth: 150 }}
-            />
-            <Select
-              value={filterTransferred}
-              onChange={(_, v) => v && setFilterTransferred(v as any)}
-              sx={{ fontSize: "13px", height: 36, minWidth: 150 }}
-            >
-              <Option value="all">Бүгд</Option>
-              <Option value="transferred">Шилжүүлсэн</Option>
-              <Option value="pending">Шилжүүлээгүй</Option>
-            </Select>
-          </Box>
+              <Select
+                value={filterYear}
+                onChange={(_, v) => v && setFilterYear(v)}
+                sx={SEL}
+              >
+                {[2024, 2025, 2026].map((y) => (
+                  <Option key={y} value={y}>
+                    {y} он
+                  </Option>
+                ))}
+              </Select>
+              <Select<number | "all">
+                value={filterMonth}
+                onChange={(_, v) =>
+                  v !== null && setFilterMonth(v as number | "all")
+                }
+                sx={{ ...SEL, minWidth: 110 }}
+              >
+                <Option value="all">Бүх сар</Option>
+                {MONTHS.map((m, i) => (
+                  <Option key={i} value={i}>
+                    {m}
+                  </Option>
+                ))}
+              </Select>
+              <Input
+                type="date"
+                value={filterFrom}
+                onChange={(e) => setFilterFrom(e.target.value)}
+                sx={{ ...SEL, width: 145 }}
+              />
+              <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                —
+              </Typography>
+              <Input
+                type="date"
+                value={filterTo}
+                onChange={(e) => setFilterTo(e.target.value)}
+                sx={{ ...SEL, width: 145 }}
+              />
+              <Input
+                placeholder="Нэр эсвэл утас..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{ ...SEL, flex: 1, minWidth: 150 }}
+              />
+              <Select
+                value={filterTransferred}
+                onChange={(_, v) => v && setFilterTransferred(v as any)}
+                sx={{ fontSize: "13px", height: 36, minWidth: 150 }}
+              >
+                <Option value="all">Бүгд</Option>
+                <Option value="transferred">Шилжүүлсэн</Option>
+                <Option value="pending">Шилжүүлээгүй</Option>
+              </Select>
+            </Box>
+          )}
+
+          {/* passedIds байгаа үед хайлт л харагдана */}
+          {passedIds.length > 0 && (
+            <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+              <Input
+                placeholder="Нэр эсвэл утас..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{ ...SEL, flex: 1 }}
+              />
+              <Select
+                value={filterTransferred}
+                onChange={(_, v) => v && setFilterTransferred(v as any)}
+                sx={{ fontSize: "13px", height: 36, minWidth: 150 }}
+              >
+                <Option value="all">Бүгд</Option>
+                <Option value="transferred">Шилжүүлсэн</Option>
+                <Option value="pending">Шилжүүлээгүй</Option>
+              </Select>
+            </Box>
+          )}
 
           {/* Хүснэгт */}
           {loading ? (
@@ -482,7 +556,9 @@ export default function ReportPage() {
                       sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
                     >
                       <div
-                        onClick={() => handleTransfer(entry)}
+                        onClick={() =>
+                          user?.role === "admin" && handleTransfer(entry)
+                        }
                         style={{
                           width: 34,
                           height: 18,
@@ -490,7 +566,8 @@ export default function ReportPage() {
                           background: entry.transferred ? "#16A34A" : "#D1D5DB",
                           position: "relative",
                           transition: "background .2s",
-                          cursor: "pointer",
+                          cursor:
+                            user?.role === "admin" ? "pointer" : "default",
                           flexShrink: 0,
                         }}
                       >
@@ -547,16 +624,20 @@ export default function ReportPage() {
                       (p) =>
                         p === 1 || p === totalPages || Math.abs(p - page) <= 2,
                     )
-                    .map((p, i, arr) => (
-                      <>
-                        {i > 0 && arr[i - 1] !== p - 1 && (
-                          <Typography
-                            key={`dot-${p}`}
-                            sx={{ alignSelf: "center", color: "#bbb" }}
-                          >
-                            ...
-                          </Typography>
-                        )}
+                    .reduce((acc: number[], p, i, arr) => {
+                      if (i > 0 && arr[i - 1] !== p - 1) acc.push(-1);
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, i) =>
+                      p === -1 ? (
+                        <Typography
+                          key={`dot-${i}`}
+                          sx={{ alignSelf: "center", color: "#bbb" }}
+                        >
+                          ...
+                        </Typography>
+                      ) : (
                         <Button
                           key={p}
                           size="sm"
@@ -575,8 +656,8 @@ export default function ReportPage() {
                         >
                           {p}
                         </Button>
-                      </>
-                    ))}
+                      ),
+                    )}
                   <Button
                     size="sm"
                     variant="outlined"
@@ -590,7 +671,6 @@ export default function ReportPage() {
                 </Box>
               )}
 
-              {/* Хуудасны мэдээлэл */}
               <Typography
                 sx={{
                   textAlign: "center",
