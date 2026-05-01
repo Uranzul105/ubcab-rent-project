@@ -255,7 +255,7 @@ export default function CompanyPage() {
                     </Option>
                   ))}
                 </Select>
-                <Select
+                <Select<number | "all">
                   value={detailMonth}
                   onChange={(_, v) =>
                     v !== null && setDetailMonth(v as number | "all")
@@ -611,7 +611,7 @@ export default function CompanyPage() {
                   </Option>
                 ))}
               </Select>
-              <Select
+              <Select<number | "all">
                 value={filterMonth}
                 onChange={(_, v) =>
                   v !== null && setFilterMonth(v as number | "all")
