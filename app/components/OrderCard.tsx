@@ -295,7 +295,7 @@ export default function OrderCard({
                   placeholder="Утасны дугаар"
                   value={row.phone}
                   onChange={(e) => handlePhoneChange(index, e.target.value)}
-                  list={`ph-${index}`}
+                  slotProps={{ input: { list: `ph-${index}` } }}
                   sx={{ fontSize: "13px", height: 40 }}
                 />
                 <datalist id={`ph-${index}`}>

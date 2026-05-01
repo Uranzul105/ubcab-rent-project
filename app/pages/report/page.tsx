@@ -27,7 +27,7 @@ const MONTHS = [
   "12-р сар",
 ];
 
-const PER_PAGE = 15;
+const PER_PAGE = 20;
 
 type DriverEntry = {
   orderId: string;
@@ -42,7 +42,7 @@ type DriverEntry = {
   regno: string;
 };
 
-export default function Page() {
+export default function ReportPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const now = new Date();
@@ -75,7 +75,7 @@ export default function Page() {
     return orders
       .filter((o) => {
         if (passedIds.length > 0) return passedIds.includes(String(o._id));
-        if (o.status !== "done") return false;
+        if (o.status !== "done" && o.status !== "active") return false;
         const d = new Date(o.date);
         const matchYear = d.getFullYear() === filterYear;
         const matchMonth =
@@ -288,7 +288,8 @@ export default function Page() {
               <Typography
                 sx={{ fontSize: "13px", color: "#16A34A", fontWeight: 600 }}
               >
-                ✓ {passedIds.length} захиалга шилжүүлэх хүсэлт илгээгдлээ.
+                ✓ {passedIds.length} захиалга шилжүүлэгдэж байна — жолоочийн
+                цалинг шилжүүлэн баталгаажуулна уу
               </Typography>
             </Box>
           )}

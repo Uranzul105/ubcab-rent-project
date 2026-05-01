@@ -36,7 +36,7 @@ const STATUSES = [
 ] as const;
 
 type StatusKey = (typeof STATUSES)[number]["key"];
-const PER_PAGE = 10;
+const PER_PAGE = 15;
 
 function StatusBadge({ status }: { status: StatusKey }) {
   const s = STATUSES.find((x) => x.key === status) ?? STATUSES[0];
