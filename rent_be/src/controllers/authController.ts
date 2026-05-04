@@ -34,10 +34,10 @@ export const seedUsers = async (req: Request, res: Response) => {
     }
 
     await User.insertMany([
-      { name: "Болд Менежер",   username: "manager1", password: "1234", role: "manager" },
-      { name: "Сараа Менежер",  username: "manager2", password: "1234", role: "manager" },
-      { name: "Дэлгэр Менежер", username: "manager3", password: "1234", role: "manager" },
-      { name: "Админ",          username: "admin",    password: "admin", role: "admin" },
+      { name: "Золбоо Менежер",   username: "manager1", password: "1212", role: "manager" },
+      { name: "Бэлгүүн Менежер",  username: "manager2", password: "1313", role: "manager" },
+      { name: "Энхзул Менежер", username: "manager3", password: "1414", role: "manager" },
+      { name: "Админ",          username: "admin",    password: "9999", role: "admin" },
     ]);
 
     res.json({ message: "Хэрэглэгчид үүслээ ✅" });
