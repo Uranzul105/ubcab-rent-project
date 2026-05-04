@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/ubcab_rent";
 
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: "https://ubcab-rent-project.vercel.app" }));
 app.use(express.json());
 
 app.use("/api/orders", orderRoutes);

@@ -1,4 +1,4 @@
-const BASE = "http://localhost:3001/api";
+const BASE = "https://ubcab-rent-project.onrender.com/api";
 
 export type DriverRow = {
   phone: string;
