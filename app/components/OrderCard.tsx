@@ -65,6 +65,15 @@ export default function OrderCard({
         ],
   );
 
+  const [companies, setCompanies] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("https://ubcab-rent-project.onrender.com/api/companies")
+      .then((r) => r.json())
+      .then((data) => setCompanies(data.map((c: any) => c.name)))
+      .catch(() => {});
+  }, []);
+
   const [allDrivers, setAllDrivers] = useState<
     { phone: string; name: string }[]
   >([]);
@@ -201,12 +210,23 @@ export default function OrderCard({
         }}
       >
         <Calendar value={date} onChange={setDate} />
-        <Input
-          placeholder="Захиалагчийн нэр"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          sx={{ fontSize: "13px", height: 40 }}
-        />
+
+        <>
+          <datalist id="company-list">
+            {companies.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+          <Input
+            placeholder="Захиалагчийн нэр"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            slotProps={{
+              input: { list: "company-list" },
+            }}
+            sx={{ fontSize: "13px", height: 40 }}
+          />
+        </>
         <NumericFormat
           customInput={Input}
           placeholder="Үнийн дүн"

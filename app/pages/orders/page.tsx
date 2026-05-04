@@ -105,33 +105,35 @@ export default function OrdersPage() {
     return names;
   }, [orders]);
 
-  const filteredOrders = orders.filter((o) => {
-    const matchFrom = filterFrom ? o.date >= filterFrom : true;
-    const matchTo = filterTo ? o.date <= filterTo : true;
-    const matchName = filterName
-      ? o.customerName.toLowerCase().includes(filterName.toLowerCase())
-      : true;
-    const matchDriver = filterDriver
-      ? (o.drivers ?? []).some((d) =>
-          d.name.toLowerCase().includes(filterDriver.toLowerCase()),
-        )
-      : true;
-    const matchPaid =
-      filterPaid === "all" ? true : filterPaid === "paid" ? o.paid : !o.paid;
-    const matchManager =
-      filterManager === "all" ? true : o.managerName === filterManager;
-    const matchStatus =
-      filterStatus === "all" ? true : o.status === filterStatus;
-    return (
-      matchFrom &&
-      matchTo &&
-      matchName &&
-      matchDriver &&
-      matchPaid &&
-      matchManager &&
-      matchStatus
-    );
-  });
+  const filteredOrders = orders
+    .filter((o) => {
+      const matchFrom = filterFrom ? o.date >= filterFrom : true;
+      const matchTo = filterTo ? o.date <= filterTo : true;
+      const matchName = filterName
+        ? o.customerName.toLowerCase().includes(filterName.toLowerCase())
+        : true;
+      const matchDriver = filterDriver
+        ? (o.drivers ?? []).some((d) =>
+            d.name.toLowerCase().includes(filterDriver.toLowerCase()),
+          )
+        : true;
+      const matchPaid =
+        filterPaid === "all" ? true : filterPaid === "paid" ? o.paid : !o.paid;
+      const matchManager =
+        filterManager === "all" ? true : o.managerName === filterManager;
+      const matchStatus =
+        filterStatus === "all" ? true : o.status === filterStatus;
+      return (
+        matchFrom &&
+        matchTo &&
+        matchName &&
+        matchDriver &&
+        matchPaid &&
+        matchManager &&
+        matchStatus
+      );
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const totalPages = Math.ceil(filteredOrders.length / PER_PAGE);
   const pagedOrders = filteredOrders.slice(

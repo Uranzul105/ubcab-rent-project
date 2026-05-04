@@ -121,11 +121,7 @@ export default function CompanyPage() {
           totalFuel,
         };
       })
-      .sort(
-        (a, b) =>
-          new Date(b.orders[0]?.date ?? 0).getTime() -
-          new Date(a.orders[0]?.date ?? 0).getTime(),
-      );
+      .sort((a, b) => b.total - a.total);
   }, [companies, filteredOrders, search]);
 
   // Хөл дүн
