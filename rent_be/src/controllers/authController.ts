@@ -37,7 +37,7 @@ export const seedUsers = async (req: Request, res: Response) => {
       { name: "Золбоо Менежер",   username: "manager1", password: "1212", role: "manager" },
       { name: "Бэлгүүн Менежер",  username: "manager2", password: "1313", role: "manager" },
       { name: "Энхзул Менежер", username: "manager3", password: "1414", role: "manager" },
-      { name: "Админ",          username: "admin",    password: "9999", role: "admin" },
+      { name: "Санхүү",          username: "admin",    password: "9999", role: "admin" },
     ]);
 
     res.json({ message: "Хэрэглэгчид үүслээ ✅" });
