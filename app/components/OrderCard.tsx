@@ -70,7 +70,7 @@ export default function OrderCard({
   >([]);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/drivers")
+    fetch("https://ubcab-rent-project.onrender.com/api/drivers")
       .then((res) => res.json())
       .then(setAllDrivers)
       .catch(() => {});
