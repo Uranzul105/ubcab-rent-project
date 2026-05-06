@@ -74,7 +74,12 @@ export default function ReportPage() {
   const allEntries: DriverEntry[] = useMemo(() => {
     return orders
       .filter((o) => {
-        if (passedIds.length > 0) return passedIds.includes(String(o._id));
+        if (passedIds.length > 0) {
+          return (
+            passedIds.includes(String(o._id)) &&
+            (o.status === "done" || o.status === "active")
+          );
+        }
         if (o.status !== "done" && o.status !== "active") return false;
         const d = new Date(o.date);
         const matchYear = d.getFullYear() === filterYear;

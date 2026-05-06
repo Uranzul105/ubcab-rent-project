@@ -68,6 +68,8 @@ export default function CompanyPage() {
   const [detailMonth, setDetailMonth] = useState<number | "all">("all");
   const [detailFrom, setDetailFrom] = useState("");
   const [detailTo, setDetailTo] = useState("");
+  const [page, setPage] = useState(1);
+  const PER = 10;
 
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -160,6 +162,9 @@ export default function CompanyPage() {
     (s, o) => s + (o.drivers ?? []).reduce((ss, d) => ss + (d.fuel ?? 0), 0),
     0,
   );
+
+  const totalPages = Math.ceil(companyGroups.length / PER);
+  const pagedGroups = companyGroups.slice((page - 1) * PER, page * PER);
 
   const handleAddCompany = async () => {
     if (!form.name) {
@@ -624,7 +629,10 @@ export default function CompanyPage() {
               <Input
                 placeholder="Байгууллагын нэрээр хайх..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 startDecorator={
                   <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
                 }
@@ -645,7 +653,7 @@ export default function CompanyPage() {
             ) : (
               <>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  {companyGroups.map((group) => (
+                  {pagedGroups.map((group) => (
                     <Box
                       key={String(group.company._id)}
                       onClick={() => setSelected(group.company.name)}
@@ -815,6 +823,59 @@ export default function CompanyPage() {
                     </Typography>
                   )}
                 </Box>
+                {totalPages > 1 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      gap: 0.5,
+                      mt: 2,
+                    }}
+                  >
+                    <Button
+                      size="sm"
+                      variant="outlined"
+                      color="neutral"
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => p - 1)}
+                      sx={{ minWidth: 36, borderRadius: "8px" }}
+                    >
+                      ‹
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (p) => (
+                        <Button
+                          key={p}
+                          size="sm"
+                          variant={page === p ? "solid" : "outlined"}
+                          color="neutral"
+                          onClick={() => setPage(p)}
+                          sx={{
+                            minWidth: 36,
+                            borderRadius: "8px",
+                            ...(page === p && {
+                              backgroundColor: "#facc15",
+                              color: "#000",
+                              border: "none",
+                            }),
+                          }}
+                        >
+                          {p}
+                        </Button>
+                      ),
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outlined"
+                      color="neutral"
+                      disabled={page === totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      sx={{ minWidth: 36, borderRadius: "8px" }}
+                    >
+                      ›
+                    </Button>
+                  </Box>
+                )}
               </>
             )}
           </Box>

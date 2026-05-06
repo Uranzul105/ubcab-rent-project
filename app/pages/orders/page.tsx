@@ -220,7 +220,7 @@ export default function OrdersPage() {
 
   const handleSendToFinance = (orderId: string) => {
     showConfirm(
-      "Тайлан рүү шилжүүлэх үү?",
+      "Санхүү рүү шилжүүлэх үү?",
       () => {
         window.location.href = `/pages/report?ids=${orderId}`;
       },
