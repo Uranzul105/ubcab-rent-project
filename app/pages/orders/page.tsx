@@ -720,17 +720,20 @@ export default function OrdersPage() {
                         </Box>
                       ) : (
                         <>
-                          <Box sx={{ width: 150, flexShrink: 0 }}>
+                          <Box
+                            sx={{ width: 150, flexShrink: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <Select
                               size="sm"
                               value={order.status}
-                              onChange={(_, val) =>
-                                val &&
-                                handleStatusChange(
-                                  String(order._id),
-                                  val as StatusKey,
-                                )
-                              }
+                              onChange={(_, val) => {
+                                if (val)
+                                  handleStatusChange(
+                                    String(order._id),
+                                    val as StatusKey,
+                                  );
+                              }}
                               sx={{
                                 fontSize: "13px",
                                 fontWeight: 500,

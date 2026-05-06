@@ -334,16 +334,38 @@ export default function OrderCard({
                     ))}
                 </datalist>
               </div>
-              <Input
-                placeholder="Жолоочийн нэр"
-                value={row.name}
-                onChange={(e) => {
-                  const updated = [...driverRows];
-                  updated[index] = { ...updated[index], name: e.target.value };
-                  setDriverRows(updated);
-                }}
-                sx={{ fontSize: "13px", height: 40 }}
-              />
+              <>
+                <datalist id={`driver-name-list-${index}`}>
+                  {allDrivers.map((d) => (
+                    <option key={d.phone} value={d.name} />
+                  ))}
+                </datalist>
+                <Input
+                  placeholder="Жолоочийн нэр"
+                  value={row.name}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const found = allDrivers.find((d) => d.name === val);
+                    if (found) {
+                      const updated = [...driverRows];
+                      updated[index] = {
+                        ...updated[index],
+                        name: found.name,
+                        phone: found.phone,
+                      };
+                      setDriverRows(updated);
+                    } else {
+                      const updated = [...driverRows];
+                      updated[index] = { ...updated[index], name: val };
+                      setDriverRows(updated);
+                    }
+                  }}
+                  slotProps={{
+                    input: { list: `driver-name-list-${index}` },
+                  }}
+                  sx={{ fontSize: "13px", height: 40 }}
+                />
+              </>
               <NumericFormat
                 customInput={Input}
                 placeholder="Цалин"
