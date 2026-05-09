@@ -292,10 +292,7 @@ function InvoiceSheet({
             <span style={{ color: "#888" }}>Регистр дугаар </span>
             <strong>{company?.regno ?? ""}</strong>
           </Typography>
-          <Typography sx={{ fontSize: "11px" }}>
-            <span style={{ color: "#888" }}>Хаяг холбоо барих утас: </span>
-            <strong>{company?.phone ?? ""}</strong>
-          </Typography>
+
           <Typography sx={{ fontSize: "11px", mt: 0.5, fontStyle: "italic" }}>
             <span style={{ color: "#888" }}>Хамрах хугацаа: </span>
             <strong>
@@ -857,16 +854,6 @@ function InvoiceView({
                   </Typography>
                   <Input
                     value={company.regno ?? ""}
-                    readOnly
-                    sx={{ ...SEL, opacity: 0.7 }}
-                  />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: "11px", color: "#999", mb: 0.5 }}>
-                    Утас
-                  </Typography>
-                  <Input
-                    value={(company as any).phone ?? ""}
                     readOnly
                     sx={{ ...SEL, opacity: 0.7 }}
                   />
