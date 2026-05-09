@@ -96,9 +96,9 @@ const toMongolianWords = (num: number): string => {
     "гуч",
     "дөч",
     "тавь",
-    "жар",
-    "дал",
-    "ная",
+    "жаран",
+    "далан",
+    "наян",
     "ер",
   ];
   if (!num || num === 0) return "Тэг төгрөг";
@@ -137,55 +137,15 @@ type InvoiceRow = {
 };
 
 // ─────────────────────────────────────────────
-// UbcabLogo — SVG (print-safe, no external img)
+// UbcabLogo — /public/logo.png
 // ─────────────────────────────────────────────
 function UbcabLogo({ height = 38 }: { height?: number }) {
-  const w = height * 3.2;
   return (
-    <svg
-      width={w}
-      height={height}
-      viewBox="0 0 122 38"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Blue rounded square */}
-      <rect x="0" y="0" width="38" height="38" rx="10" fill="#185FA5" />
-      {/* Yellow "u" */}
-      <text
-        x="19"
-        y="27"
-        textAnchor="middle"
-        fontSize="22"
-        fontWeight="bold"
-        fill="#facc15"
-        fontFamily="Arial, sans-serif"
-      >
-        u
-      </text>
-      {/* "ubcab" text */}
-      <text
-        x="46"
-        y="21"
-        fontSize="15"
-        fontWeight="bold"
-        fill="#185FA5"
-        fontFamily="Arial, sans-serif"
-      >
-        ubcab
-      </text>
-      {/* "rent" subtitle */}
-      <text
-        x="47"
-        y="33"
-        fontSize="9"
-        fill="#888"
-        fontFamily="Arial, sans-serif"
-        letterSpacing="3"
-      >
-        rent
-      </text>
-    </svg>
+    <img
+      src="/logo.png"
+      alt="ЮБИКАБ rent"
+      style={{ height, width: "auto", objectFit: "contain" }}
+    />
   );
 }
 
@@ -331,6 +291,10 @@ function InvoiceSheet({
           <Typography sx={{ fontSize: "11px" }}>
             <span style={{ color: "#888" }}>Регистр дугаар </span>
             <strong>{company?.regno ?? ""}</strong>
+          </Typography>
+          <Typography sx={{ fontSize: "11px" }}>
+            <span style={{ color: "#888" }}>Хаяг холбоо барих утас: </span>
+            <strong>{company?.phone ?? ""}</strong>
           </Typography>
           <Typography sx={{ fontSize: "11px", mt: 0.5, fontStyle: "italic" }}>
             <span style={{ color: "#888" }}>Хамрах хугацаа: </span>
@@ -679,6 +643,7 @@ function InvoiceView({
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          "@media print": { display: "none" },
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -1324,7 +1289,10 @@ export default function CompanyPage() {
       }}
     >
       {/* Hide header on print */}
-      <div style={{ position: "relative", zIndex: 10 }} className="no-print">
+      <div
+        style={{ position: "relative", zIndex: 10 }}
+        className="print:hidden"
+      >
         <Header />
       </div>
 
