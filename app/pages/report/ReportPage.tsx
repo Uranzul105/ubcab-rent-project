@@ -39,6 +39,7 @@ type DriverEntry = {
   salary: number;
   fuel: number;
   transferred: boolean;
+  // transferredAt?: string;
   regno: string;
 };
 

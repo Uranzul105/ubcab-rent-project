@@ -19,6 +19,7 @@ type DriverRow = {
   salary?: number;
   fuelToggle?: boolean;
   fuel?: number;
+  regno?: string;
 };
 
 type OrderData = {
@@ -179,6 +180,7 @@ export default function OrderCard({
         name: d.name,
         salary: d.salary ?? 0,
         fuel: d.fuel ?? 0,
+        regno: d.regno ?? "",
       })),
     });
 
