@@ -39,7 +39,7 @@ type DriverEntry = {
   salary: number;
   fuel: number;
   transferred: boolean;
-  // transferredAt?: string;
+  transferredAt?: string;
   regno: string;
 };
 
@@ -101,6 +101,7 @@ export default function ReportPage() {
           salary: d.salary ?? 0,
           fuel: d.fuel ?? 0,
           transferred: d.transferred ?? false,
+          transferredAt: (d as any).transferredAt ?? "",
           regno: d.regno ?? "",
         })),
       )
@@ -145,8 +146,15 @@ export default function ReportPage() {
   const handleTransfer = async (entry: DriverEntry) => {
     const order = orders.find((o) => String(o._id) === entry.orderId);
     if (!order) return;
+    const now = new Date().toISOString().slice(0, 10);
     const updatedDrivers = (order.drivers ?? []).map((d, i) =>
-      i === entry.driverIndex ? { ...d, transferred: !d.transferred } : d,
+      i === entry.driverIndex
+        ? {
+            ...d,
+            transferred: !d.transferred,
+            transferredAt: !d.transferred ? now : "", // ← нэмнэ
+          }
+        : d,
     );
     await updateOrder(entry.orderId, { drivers: updatedDrivers } as any);
     setOrders((prev) =>
@@ -462,7 +470,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 100px 110px 100px 150px 130px 100px 100px 90px",
+                    "30px 100px 110px 100px 150px 130px 100px 100px 90px 100px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -481,6 +489,7 @@ export default function ReportPage() {
                   "Цалин",
                   "Шатахуун",
                   "Шилжүүлсэн",
+                  "Огноо",
                 ].map((h) => (
                   <Typography
                     key={h}
@@ -499,7 +508,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 100px 110px 100px 150px 130px 100px 100px 90px",
+                        "30px 100px 110px 100px 150px 130px 100px 100px 90px 100px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -600,6 +609,9 @@ export default function ReportPage() {
                         }}
                       >
                         {entry.transferred ? "✓" : ""}
+                      </Typography>
+                      <Typography sx={{ fontSize: "11px", color: "#888" }}>
+                        {entry.transferredAt || "—"}
                       </Typography>
                     </Box>
                   </Box>
