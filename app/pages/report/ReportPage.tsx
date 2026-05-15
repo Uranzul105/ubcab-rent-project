@@ -225,7 +225,7 @@ export default function ReportPage() {
         <Header />
       </div>
 
-      <Box sx={{ maxWidth: 1100, margin: "0 auto", padding: "24px" }}>
+      <Box sx={{ maxWidth: 1300, margin: "0 auto", padding: "24px" }}>
         <Box
           sx={{
             background: "rgba(255,255,255,0.95)",
@@ -508,7 +508,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 100px 110px 100px 150px 130px 100px 100px 90px 100px",
+                        "30px 100px 110px 100px 150px 130px 100px 100px 90px 90px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -610,7 +610,13 @@ export default function ReportPage() {
                       >
                         {entry.transferred ? "✓" : ""}
                       </Typography>
-                      <Typography sx={{ fontSize: "11px", color: "#888" }}>
+                      <Typography
+                        sx={{
+                          fontSize: "11px",
+                          color: "#888",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {entry.transferredAt || "—"}
                       </Typography>
                     </Box>
