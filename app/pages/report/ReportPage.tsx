@@ -470,7 +470,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 90px 110px 110px 160px 140px 90px 80px 110px 90px",
+                    "30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -508,7 +508,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 90px 110px 110px 160px 140px 90px 80px 110px 90px",
+                        "30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -610,16 +610,16 @@ export default function ReportPage() {
                       >
                         {entry.transferred ? "✓" : ""}
                       </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: "11px",
-                          color: "#888",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {entry.transferredAt || "—"}
-                      </Typography>
                     </Box>
+                    <Typography
+                      sx={{
+                        fontSize: "11px",
+                        color: "#888",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {entry.transferredAt || "—"}
+                    </Typography>
                   </Box>
                 ))}
               </Box>
