@@ -76,7 +76,7 @@ export default function OrderCard({
   }, []);
 
   const [allDrivers, setAllDrivers] = useState<
-    { phone: string; name: string }[]
+    { phone: string; name: string; regno?: string }[]
   >([]);
 
   useEffect(() => {
@@ -119,6 +119,7 @@ export default function OrderCard({
       ...updated[index],
       phone,
       name: found?.name ?? updated[index].name,
+      regno: found?.regno ?? updated[index].regno ?? "",
     };
     setDriverRows(updated);
   };
@@ -354,6 +355,7 @@ export default function OrderCard({
                         ...updated[index],
                         name: found.name,
                         phone: found.phone,
+                        regno: found.regno ?? "",
                       };
                       setDriverRows(updated);
                     } else {
