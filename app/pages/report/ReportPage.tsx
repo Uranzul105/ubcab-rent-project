@@ -57,6 +57,8 @@ export default function ReportPage() {
     "all" | "transferred" | "pending"
   >("all");
   const [user, setUser] = useState<any>(null);
+  const [filterTransferredFrom, setFilterTransferredFrom] = useState("");
+  const [filterTransferredTo, setFilterTransferredTo] = useState("");
 
   const searchParams = useSearchParams();
   const passedIds = useMemo(
@@ -116,7 +118,18 @@ export default function ReportPage() {
             : filterTransferred === "transferred"
               ? d.transferred
               : !d.transferred;
-        return matchSearch && matchTransferred;
+        const matchTransferredFrom = filterTransferredFrom
+          ? d.transferredAt >= filterTransferredFrom
+          : true;
+        const matchTransferredTo = filterTransferredTo
+          ? d.transferredAt <= filterTransferredTo
+          : true;
+        return (
+          matchSearch &&
+          matchTransferred &&
+          matchTransferredFrom &&
+          matchTransferredTo
+        );
       })
       .sort(
         (a, b) =>
@@ -131,6 +144,8 @@ export default function ReportPage() {
     search,
     filterTransferred,
     passedIds,
+    filterTransferredFrom,
+    filterTransferredTo,
   ]);
 
   useMemo(() => {
@@ -152,7 +167,7 @@ export default function ReportPage() {
         ? {
             ...d,
             transferred: !d.transferred,
-            transferredAt: !d.transferred ? now : "", // ← нэмнэ
+            transferredAt: !d.transferred ? now : "",
           }
         : d,
     );
@@ -429,6 +444,21 @@ export default function ReportPage() {
                 <Option value="transferred">Шилжүүлсэн</Option>
                 <Option value="pending">Шилжүүлээгүй</Option>
               </Select>
+              <Input
+                type="date"
+                value={filterTransferredFrom}
+                onChange={(e) => setFilterTransferredFrom(e.target.value)}
+                sx={{ ...SEL, width: 145 }}
+              />
+              <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                —
+              </Typography>
+              <Input
+                type="date"
+                value={filterTransferredTo}
+                onChange={(e) => setFilterTransferredTo(e.target.value)}
+                sx={{ ...SEL, width: 145 }}
+              />
             </Box>
           )}
 
