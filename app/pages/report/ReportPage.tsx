@@ -641,15 +641,33 @@ export default function ReportPage() {
                         {entry.transferred ? "✓" : ""}
                       </Typography>
                     </Box>
-                    <Typography
-                      sx={{
-                        fontSize: "11px",
-                        color: "#888",
-                        whiteSpace: "nowrap",
+                    <Input
+                      type="date"
+                      value={entry.transferredAt || ""}
+                      onChange={async (e) => {
+                        const order = orders.find(
+                          (o) => String(o._id) === entry.orderId,
+                        );
+                        if (!order) return;
+                        const updatedDrivers = (order.drivers ?? []).map(
+                          (d, i) =>
+                            i === entry.driverIndex
+                              ? { ...d, transferredAt: e.target.value }
+                              : d,
+                        );
+                        await updateOrder(entry.orderId, {
+                          drivers: updatedDrivers,
+                        } as any);
+                        setOrders((prev) =>
+                          prev.map((o) =>
+                            String(o._id) === entry.orderId
+                              ? { ...o, drivers: updatedDrivers }
+                              : o,
+                          ),
+                        );
                       }}
-                    >
-                      {entry.transferredAt || "—"}
-                    </Typography>
+                      sx={{ fontSize: "11px", height: 30, width: 130 }}
+                    />
                   </Box>
                 ))}
               </Box>
