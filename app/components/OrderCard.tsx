@@ -87,7 +87,7 @@ export default function OrderCard({
   }, []);
 
   const [orderType, setOrderType] = useState<string>(
-    (defaultValues as any)?.orderType ?? "",
+    (defaultValues as any)?.orderType ?? "sales",
   );
 
   const maxSalary = useMemo(
@@ -264,7 +264,12 @@ export default function OrderCard({
               type="radio"
               checked={orderType === t.value}
               onChange={() => setOrderType(t.value)}
-              style={{ accentColor: "#facc15", cursor: "pointer" }}
+              style={{
+                accentColor: "#facc15",
+                cursor: "pointer",
+                width: 18,
+                height: 18,
+              }}
             />
             <Typography sx={{ fontSize: "13px", color: "#555" }}>
               {t.label}

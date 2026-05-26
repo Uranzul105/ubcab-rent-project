@@ -8,6 +8,7 @@ export interface IOrder extends Document {
   paid: boolean;
   managerId: number;
   managerName: string;
+  orderType?: "sales" | "operations"; 
   drivers: {
     phone: string;
     name: string;
@@ -30,6 +31,7 @@ const OrderSchema = new Schema<IOrder>(
     paid: { type: Boolean, default: false },
     managerId: { type: Number, required: true },
     managerName: { type: String, required: true },
+    orderType: { type: String, enum: ["sales", "operations"] },
     drivers: [
       {
         phone: String,
