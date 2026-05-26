@@ -7,6 +7,7 @@ export type DriverRow = {
   fuel: number;
   transferred: boolean;
   regno?: string;
+  orderType?: "sales" | "operations";
 };
 
 export type Order = {

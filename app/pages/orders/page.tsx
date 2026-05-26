@@ -78,6 +78,7 @@ export default function OrdersPage() {
   const [confirmVariant, setConfirmVariant] = useState<"danger" | "success">(
     "danger",
   );
+  const [filterOrderType, setFilterOrderType] = useState("all");
 
   const showConfirm = (
     message: string,
@@ -123,6 +124,10 @@ export default function OrdersPage() {
         filterManager === "all" ? true : o.managerName === filterManager;
       const matchStatus =
         filterStatus === "all" ? true : o.status === filterStatus;
+      const matchOrderType =
+        filterOrderType === "all"
+          ? true
+          : (o as any).orderType === filterOrderType;
       return (
         matchFrom &&
         matchTo &&
@@ -130,7 +135,8 @@ export default function OrdersPage() {
         matchDriver &&
         matchPaid &&
         matchManager &&
-        matchStatus
+        matchStatus &&
+        matchOrderType
       );
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -437,6 +443,20 @@ export default function OrdersPage() {
                 </Option>
               ))}
             </Select>
+            <Select
+              value={filterOrderType}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterOrderType(v as string);
+                  resetPage();
+                }
+              }}
+              sx={{ fontSize: "13px", height: 36, width: 190, flexShrink: 0 }}
+            >
+              <Option value="all">Бүх төрөл</Option>
+              <Option value="sales">Борлуулалт</Option>
+              <Option value="operations">Маркетинг, үйл ажиллагаа</Option>
+            </Select>
           </Box>
 
           {/* 3-р мөр: Огноо + Нэр хайлт */}
@@ -516,6 +536,7 @@ export default function OrdersPage() {
                   setFilterPaid("all");
                   setFilterManager("all");
                   setFilterStatus("all");
+                  setFilterOrderType("all");
                   resetPage();
                 }}
                 sx={{
@@ -727,7 +748,6 @@ export default function OrdersPage() {
                             <Select
                               size="sm"
                               value={order.status}
-                              disabled={allTransferred}
                               onChange={(_, val) => {
                                 if (val)
                                   handleStatusChange(
@@ -739,7 +759,6 @@ export default function OrdersPage() {
                                 fontSize: "13px",
                                 fontWeight: 500,
                                 width: "100%",
-                                opacity: allTransferred ? 0.5 : 1,
                               }}
                             >
                               {STATUSES.map((s) => (
@@ -782,33 +801,30 @@ export default function OrdersPage() {
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
-                            <Button
-                              size="sm"
-                              disabled={!canSend(order.status)}
-                              onClick={() =>
-                                canSend(order.status) &&
-                                handleSendToFinance(String(order._id))
-                              }
-                              sx={{
-                                fontSize: "11px",
-                                borderRadius: "8px",
-                                fontWeight: 700,
-                                whiteSpace: "nowrap",
-                                backgroundColor: canSend(order.status)
-                                  ? "#16A34A"
-                                  : "#F1F5F9",
-                                color: canSend(order.status)
-                                  ? "#fff"
-                                  : "#9CA3AF",
-                                "&:hover": {
-                                  backgroundColor: canSend(order.status)
-                                    ? "#15803D"
-                                    : "#F1F5F9",
-                                },
-                              }}
-                            >
-                              Шилжүүлэг
-                            </Button>
+                            {(order as any).orderType && (
+                              <Box
+                                sx={{
+                                  px: 1.5,
+                                  py: 0.5,
+                                  borderRadius: "8px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  whiteSpace: "nowrap",
+                                  background:
+                                    (order as any).orderType === "sales"
+                                      ? "#DBEAFE"
+                                      : "#DCFCE7",
+                                  color:
+                                    (order as any).orderType === "sales"
+                                      ? "#1D4ED8"
+                                      : "#16A34A",
+                                }}
+                              >
+                                {(order as any).orderType === "sales"
+                                  ? "Борлуулалт"
+                                  : "Маркетинг, үйл ажиллагаа"}
+                              </Box>
+                            )}
                           </Box>
                         </>
                       )}

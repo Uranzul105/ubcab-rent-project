@@ -86,6 +86,10 @@ export default function OrderCard({
       .catch(() => {});
   }, []);
 
+  const [orderType, setOrderType] = useState<string>(
+    (defaultValues as any)?.orderType ?? "",
+  );
+
   const maxSalary = useMemo(
     () => (totalAmount !== undefined ? totalAmount * 0.8 : undefined),
     [totalAmount],
@@ -183,7 +187,8 @@ export default function OrderCard({
         fuel: d.fuel ?? 0,
         regno: d.regno ?? "",
       })),
-    });
+      orderType,
+    } as any);
 
     if (!defaultValues) {
       setCustomerName("");
@@ -240,7 +245,33 @@ export default function OrderCard({
           sx={{ fontSize: "13px", height: 40 }}
         />
       </Box>
-
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", mt: 1 }}>
+        {[
+          { value: "sales", label: "Борлуулалт" },
+          { value: "operations", label: "Маркетинг, үйл ажиллагаа" },
+        ].map((t) => (
+          <Box
+            key={t.value}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              cursor: "pointer",
+            }}
+            onClick={() => setOrderType(t.value)}
+          >
+            <input
+              type="radio"
+              checked={orderType === t.value}
+              onChange={() => setOrderType(t.value)}
+              style={{ accentColor: "#facc15", cursor: "pointer" }}
+            />
+            <Typography sx={{ fontSize: "13px", color: "#555" }}>
+              {t.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
       {/* 20% hint */}
       {totalAmount && (
         <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
