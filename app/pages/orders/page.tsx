@@ -774,7 +774,7 @@ export default function OrdersPage() {
                             <Select
                               size="sm"
                               value={order.status}
-                              disabled={allTransferred}
+                              // disabled={allTransferred}
                               onChange={(_, val) => {
                                 if (val)
                                   handleStatusChange(
@@ -786,7 +786,7 @@ export default function OrdersPage() {
                                 fontSize: "13px",
                                 fontWeight: 500,
                                 width: "100%",
-                                opacity: allTransferred ? 0.5 : 1,
+                                // opacity: allTransferred ? 0.5 : 1,
                               }}
                             >
                               {STATUSES.map((s) => (
