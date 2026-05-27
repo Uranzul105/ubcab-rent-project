@@ -15,6 +15,8 @@ export interface IOrder extends Document {
     salary: number;
     fuel: number;
      transferred: boolean;
+     transferredAt?: string; 
+     regno?: string;  
   }[];
 }
 
@@ -39,6 +41,8 @@ const OrderSchema = new Schema<IOrder>(
         salary: Number,
         fuel: { type: Number, default: 0 },
          transferred: { type: Boolean, default: false },
+         transferredAt: { type: String, default: "" }, 
+         regno: { type: String, default: "" },  
       },
     ],
   },
