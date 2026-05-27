@@ -738,6 +738,32 @@ export default function OrdersPage() {
                           >
                             {order.paid ? "Төлсөн" : "Төлөөгүй"}
                           </Typography>
+                          {(order as any).orderType && (
+                            <Box
+                              sx={{
+                                px: 1.5,
+                                py: 0.5,
+                                borderRadius: "8px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                                width: 160,
+                                textAlign: "center",
+                                background:
+                                  (order as any).orderType === "sales"
+                                    ? "#DCFCE7"
+                                    : "#DBEAFE",
+                                color:
+                                  (order as any).orderType === "sales"
+                                    ? "#16A34A"
+                                    : "#1D4ED8",
+                              }}
+                            >
+                              {(order as any).orderType === "sales"
+                                ? "Борлуулалт"
+                                : "Маркетинг, үйл ажиллагаа"}
+                            </Box>
+                          )}
                         </Box>
                       ) : (
                         <>
@@ -810,14 +836,16 @@ export default function OrdersPage() {
                                   fontSize: "11px",
                                   fontWeight: 700,
                                   whiteSpace: "nowrap",
+                                  width: 160,
+                                  textAlign: "center",
                                   background:
                                     (order as any).orderType === "sales"
-                                      ? "#DBEAFE"
-                                      : "#DCFCE7",
+                                      ? "#DCFCE7"
+                                      : "#DBEAFE",
                                   color:
                                     (order as any).orderType === "sales"
-                                      ? "#1D4ED8"
-                                      : "#16A34A",
+                                      ? "#16A34A"
+                                      : "#1D4ED8",
                                 }}
                               >
                                 {(order as any).orderType === "sales"
