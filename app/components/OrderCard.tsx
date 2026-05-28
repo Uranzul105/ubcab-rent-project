@@ -107,13 +107,14 @@ export default function OrderCard({
 
   // Цалин + шатахуун нийлсэн дүн 80%-иас хэтрэхгүй байх
   const salaryError = useMemo(() => {
+    if (orderType === "operations") return "";
     if (maxSalary === undefined) return "";
     const total = totalSalary + totalFuel;
     if (total > maxSalary) {
       return `Цалин + шатахуун нийлсэн дүн (${total.toLocaleString()}₮) 80%-иас хэтэрч болохгүй`;
     }
     return "";
-  }, [totalSalary, totalFuel, maxSalary]);
+  }, [totalSalary, totalFuel, maxSalary, orderType]);
 
   const handlePhoneChange = (index: number, value: string) => {
     const phone = value.replace(/\D/g, "");
@@ -278,7 +279,7 @@ export default function OrderCard({
         ))}
       </Box>
       {/* 20% hint */}
-      {totalAmount && (
+      {totalAmount && orderType !== "operations" && (
         <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
           <Box
             sx={{
