@@ -598,10 +598,12 @@ function InvoiceView({
   company,
   orders,
   onBack,
+  unpaid,
 }: {
   company: Company;
   orders: Order[];
   onBack: () => void;
+  unpaid: number;
 }) {
   const now = new Date();
   const todayISO = toISO(now);
@@ -618,7 +620,7 @@ function InvoiceView({
   );
   const [manager, setManager] = useState("Б.Бэлгүүн");
   const [rows, setRows] = useState<InvoiceRow[]>([
-    { id: 1, name: "", date: todayISO, qty: 1, price: 60000 },
+    { id: 1, name: "Машин түрээс", date: todayISO, qty: 1, price: unpaid },
   ]);
 
   // issueDate өөрчлөгдөхөд payDue автоматаар +14 хоног
@@ -1294,6 +1296,7 @@ export default function CompanyPage() {
             onBack={() => {
               setPageView("detail");
             }}
+            unpaid={selectedGroup.unpaid}
           />
         )}
 
