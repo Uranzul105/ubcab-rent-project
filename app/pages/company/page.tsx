@@ -75,7 +75,6 @@ const genInvNo = (isoDate: string) => {
   const compact = isoDate.replace(/-/g, "");
   return `I-${compact}-01`;
 };
-
 const toMongolianWords = (num: number): string => {
   const units = [
     "",
@@ -101,7 +100,9 @@ const toMongolianWords = (num: number): string => {
     "наян",
     "ер",
   ];
+
   if (!num || num === 0) return "Тэг төгрөг";
+
   const cvt = (n: number): string => {
     let c = "";
     if (n >= 100) {
@@ -114,16 +115,19 @@ const toMongolianWords = (num: number): string => {
     } else if (n > 0) c += units[n];
     return c.trim();
   };
-  const scales = ["", "мянган", "саяын", "тэрбумын"];
+
+  const scales = ["", "мянган", "сая", "тэрбум"];
   const parts: string[] = [];
   let rem = Math.floor(num),
     si = 0;
+
   while (rem > 0) {
     const ch = rem % 1000;
     if (ch) parts.unshift(cvt(ch) + (si > 0 ? " " + scales[si] : ""));
     rem = Math.floor(rem / 1000);
     si++;
   }
+
   const r = parts.join(" ") + " төгрөг";
   return r.charAt(0).toUpperCase() + r.slice(1);
 };
