@@ -75,6 +75,7 @@ const genInvNo = (isoDate: string) => {
   const compact = isoDate.replace(/-/g, "");
   return `I-${compact}-01`;
 };
+
 const toMongolianWords = (num: number): string => {
   const units = [
     "",
@@ -88,45 +89,81 @@ const toMongolianWords = (num: number): string => {
     "найм",
     "ес",
   ];
-  const tens = [
+  const unitsJoined = [
     "",
-    "арав",
-    "хорь",
-    "гуч",
-    "дөч",
-    "тавь",
-    "жаран",
-    "далан",
-    "наян",
-    "ер",
+    "нэгэн",
+    "хоёр",
+    "гурван",
+    "дөрвөн",
+    "таван",
+    "зургаан",
+    "долоон",
+    "найман",
+    "есөн",
   ];
 
   if (!num || num === 0) return "Тэг төгрөг";
 
-  const cvt = (n: number): string => {
+  const cvt = (n: number, joined = false): string => {
+    if (n === 0) return "";
     let c = "";
     if (n >= 100) {
-      c += units[Math.floor(n / 100)] + " зуун ";
+      c += unitsJoined[Math.floor(n / 100)] + " зуун";
       n %= 100;
+      if (n > 0) c += " ";
     }
     if (n >= 10) {
-      c += tens[Math.floor(n / 10)];
-      if (n % 10) c += " " + units[n % 10];
-    } else if (n > 0) c += units[n];
+      const t = Math.floor(n / 10);
+      const u = n % 10;
+      if (u === 0) {
+        const tensExact = [
+          "",
+          "арав",
+          "хорь",
+          "гуч",
+          "дөч",
+          "тавь",
+          "жаран",
+          "далан",
+          "наян",
+          "ер",
+        ];
+        c += tensExact[t];
+      } else {
+        const tensMixed = [
+          "",
+          "арван",
+          "хорин",
+          "гучин",
+          "дөчин",
+          "тавин",
+          "жаран",
+          "далан",
+          "наян",
+          "ерэн",
+        ];
+        c += tensMixed[t] + " " + (joined ? unitsJoined[u] : units[u]);
+      }
+    } else if (n > 0) {
+      c += joined ? unitsJoined[n] : units[n];
+    }
     return c.trim();
   };
 
-  const scales = ["", "мянган", "сая", "тэрбум"];
-  const parts: string[] = [];
-  let rem = Math.floor(num),
-    si = 0;
+  let rem = Math.floor(num);
+  const terbum = Math.floor(rem / 1_000_000_000);
+  rem %= 1_000_000_000;
+  const saya = Math.floor(rem / 1_000_000);
+  rem %= 1_000_000;
+  const myanga = Math.floor(rem / 1_000);
+  rem %= 1_000;
+  const last = rem;
 
-  while (rem > 0) {
-    const ch = rem % 1000;
-    if (ch) parts.unshift(cvt(ch) + (si > 0 ? " " + scales[si] : ""));
-    rem = Math.floor(rem / 1000);
-    si++;
-  }
+  const parts: string[] = [];
+  if (terbum) parts.push(cvt(terbum, true) + " тэрбум");
+  if (saya) parts.push(cvt(saya, true) + " сая");
+  if (myanga) parts.push(cvt(myanga, true) + " мянга");
+  if (last) parts.push(cvt(last, true));
 
   const r = parts.join(" ") + " төгрөг";
   return r.charAt(0).toUpperCase() + r.slice(1);
