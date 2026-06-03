@@ -196,27 +196,33 @@ export default function ReportPage() {
         "#",
         "Огноо",
         "Утас",
+        "Регистр",
         "Жолоочийн нэр",
         "Захиалагч",
         "Цалин",
         "Шатахуун",
         "Нийт",
         "Шилжүүлсэн",
+        "Шилжүүлсэн огноо",
       ],
       ...allEntries.map((d, i) => [
         i + 1,
         d.orderDate,
         d.phone,
+        d.regno || "—",
         d.name,
         d.customerName,
         d.salary,
         d.fuel,
         d.salary + d.fuel,
         d.transferred ? "Тийм" : "Үгүй",
+        d.transferredAt || "—",
       ]),
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"] = [4, 12, 12, 18, 18, 12, 12, 12, 12].map((w) => ({ wch: w }));
+    ws["!cols"] = [4, 12, 12, 12, 18, 18, 12, 12, 12, 12, 12].map((w) => ({
+      wch: w,
+    }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Тайлан");
     XLSX.writeFile(
