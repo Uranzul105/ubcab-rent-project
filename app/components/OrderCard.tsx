@@ -169,8 +169,12 @@ export default function OrderCard({
   };
 
   const handleSubmit = () => {
-    if (!customerName || !totalAmount || !date) {
-      alert("Огноо, захиалагчийн нэр, үнийн дүнг бөглөнө үү");
+    if (!customerName || !date) {
+      alert("Огноо, захиалагчийн нэр бөглөнө үү");
+      return;
+    }
+    if (orderType !== "operations" && !totalAmount) {
+      alert("Үнийн дүнг бөглөнө үү");
       return;
     }
     if (salaryError) return;
