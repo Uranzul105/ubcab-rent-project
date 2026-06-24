@@ -56,9 +56,9 @@ export default function Header() {
         >
           <span
             className="menu"
-            onClick={() => window.open("https://ubcab.mn/mn/rent", "_blank")}
+            onClick={() => router.push("/pages/dashboard")}
           >
-            Бидний тухай
+            Dashboard
           </span>
           <span className="menu" onClick={() => router.push("/pages/orders")}>
             Захиалгууд
