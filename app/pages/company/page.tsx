@@ -279,10 +279,10 @@ function InvoiceSheet({
               Төлбөр төлөх данс:
             </Typography>
             <Typography sx={{ fontSize: "11px" }}>
-              Голомт банк: 1605147231
+              Төрийн банк: 34102301878696
             </Typography>
             <Typography sx={{ fontSize: "11px" }}>
-              IBAN: MN340015001605147231
+              IBAN: MN100034102301878696
             </Typography>
           </Box>
         </Box>
@@ -319,6 +319,9 @@ function InvoiceSheet({
             fontSize: "11px",
             lineHeight: 2.1,
             minWidth: 200,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
           }}
         >
           <Typography sx={{ fontSize: "11px" }}>
@@ -369,7 +372,7 @@ function InvoiceSheet({
                 key={h}
                 style={{
                   background: "#185FA5",
-                  color: "#fff",
+                  color: "#FFFFFF",
                   padding: "7px 10px",
                   fontWeight: 600,
                   fontSize: "11px",
