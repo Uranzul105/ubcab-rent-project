@@ -1,5 +1,6 @@
 const BASE = "https://ubcab-rent-project.onrender.com/api";
 
+
 export type Company = {
   _id: string;
   name: string;

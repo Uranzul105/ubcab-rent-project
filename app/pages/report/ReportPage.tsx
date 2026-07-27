@@ -11,6 +11,7 @@ import Header from "@/app/components/Header";
 import { getOrders, updateOrder, Order } from "@/app/lib/orderService";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "next/navigation";
+import PaymentApprovalModal from "@/app/components/PaymentApprovalModal";
 
 const MONTHS = [
   "1-р сар",
@@ -28,6 +29,99 @@ const MONTHS = [
 ];
 
 const PER_PAGE = 20;
+
+const toMongolianWords = (num: number): string => {
+  const units = [
+    "",
+    "нэг",
+    "хоёр",
+    "гурав",
+    "дөрөв",
+    "тав",
+    "зургаа",
+    "долоо",
+    "найм",
+    "ес",
+  ];
+  const unitsJoined = [
+    "",
+    "нэгэн",
+    "хоёр",
+    "гурван",
+    "дөрвөн",
+    "таван",
+    "зургаан",
+    "долоон",
+    "найман",
+    "есөн",
+  ];
+
+  if (!num || num === 0) return "Тэг төгрөг";
+
+  const cvt = (n: number, joined = false): string => {
+    if (n === 0) return "";
+    let c = "";
+    if (n >= 100) {
+      c += unitsJoined[Math.floor(n / 100)] + " зуун";
+      n %= 100;
+      if (n > 0) c += " ";
+    }
+    if (n >= 10) {
+      const t = Math.floor(n / 10);
+      const u = n % 10;
+      if (u === 0) {
+        const tensExact = [
+          "",
+          "арав",
+          "хорь",
+          "гуч",
+          "дөч",
+          "тавь",
+          "жаран",
+          "далан",
+          "наян",
+          "ер",
+        ];
+        c += tensExact[t];
+      } else {
+        const tensMixed = [
+          "",
+          "арван",
+          "хорин",
+          "гучин",
+          "дөчин",
+          "тавин",
+          "жаран",
+          "далан",
+          "наян",
+          "ерэн",
+        ];
+        c += tensMixed[t] + " " + (joined ? unitsJoined[u] : units[u]);
+      }
+    } else if (n > 0) {
+      c += joined ? unitsJoined[n] : units[n];
+    }
+    return c.trim();
+  };
+
+  let rem = Math.floor(num);
+  const terbum = Math.floor(rem / 1_000_000_000);
+  rem %= 1_000_000_000;
+  const saya = Math.floor(rem / 1_000_000);
+  rem %= 1_000_000;
+  const myanga = Math.floor(rem / 1_000);
+  rem %= 1_000;
+  const last = rem;
+
+  const parts: string[] = [];
+  if (terbum) parts.push(cvt(terbum, true) + " тэрбум");
+  if (saya) parts.push(cvt(saya, true) + " сая");
+  if (myanga) parts.push(cvt(myanga, true) + " мянга");
+  if (last) parts.push(cvt(last, true));
+
+  const r = parts.join(" ") + " төгрөг";
+  return r.charAt(0).toUpperCase() + r.slice(1);
+};
 
 type DriverEntry = {
   orderId: string;
@@ -59,6 +153,10 @@ export default function ReportPage() {
   const [user, setUser] = useState<any>(null);
   const [filterTransferredFrom, setFilterTransferredFrom] = useState("");
   const [filterTransferredTo, setFilterTransferredTo] = useState("");
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const searchParams = useSearchParams();
   const passedIds = useMemo(
@@ -277,6 +375,20 @@ export default function ReportPage() {
               </Typography>
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
+              {selectedEntries.size > 0 && (
+                <Button
+                  onClick={() => setShowPaymentModal(true)}
+                  sx={{
+                    backgroundColor: "#2563EB",
+                    color: "#fff",
+                    borderRadius: "40px",
+                    fontWeight: 700,
+                    "&:hover": { backgroundColor: "#1D4ED8" },
+                  }}
+                >
+                  Төлбөр зөвшөөрөх ({selectedEntries.size})
+                </Button>
+              )}
               {passedIds.length > 0 && (
                 <Button
                   variant="outlined"
@@ -506,7 +618,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
+                    "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -516,6 +628,7 @@ export default function ReportPage() {
                 }}
               >
                 {[
+                  "",
                   "#",
                   "Огноо",
                   "Утас",
@@ -544,7 +657,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
+                        "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -554,6 +667,26 @@ export default function ReportPage() {
                       alignItems: "center",
                     }}
                   >
+                    <input
+                      type="checkbox"
+                      checked={selectedEntries.has(
+                        `${entry.orderId}-${entry.driverIndex}`,
+                      )}
+                      onChange={(e) => {
+                        const key = `${entry.orderId}-${entry.driverIndex}`;
+                        setSelectedEntries((prev) => {
+                          const next = new Set(prev);
+                          e.target.checked ? next.add(key) : next.delete(key);
+                          return next;
+                        });
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        accentColor: "#facc15",
+                        width: 14,
+                        height: 14,
+                      }}
+                    />
                     <Typography sx={{ fontSize: "11px", color: "#bbb" }}>
                       {(page - 1) * PER_PAGE + idx + 1}
                     </Typography>
@@ -766,6 +899,15 @@ export default function ReportPage() {
           )}
         </Box>
       </Box>
+      {showPaymentModal && (
+        <PaymentApprovalModal
+          totalAmount={allEntries
+            .filter((e) => selectedEntries.has(`${e.orderId}-${e.driverIndex}`))
+            .reduce((s, e) => s + e.salary + e.fuel, 0)}
+          userName={user?.name ?? ""}
+          onClose={() => setShowPaymentModal(false)}
+        />
+      )}
     </div>
   );
 }

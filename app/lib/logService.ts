@@ -1,5 +1,6 @@
 const BASE = "https://ubcab-rent-project.onrender.com/api";
 
+
 export type Log = {
   _id: string;
   action: "create" | "update" | "delete";
