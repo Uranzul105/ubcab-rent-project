@@ -178,7 +178,7 @@ export default function DashboardPage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundImage: "url('/bg.png')",
+        // backgroundImage: "url('/bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

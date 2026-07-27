@@ -318,7 +318,7 @@ export default function OrdersPage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundImage: "url('/bg.png')",
+        // backgroundImage: "url('/bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",

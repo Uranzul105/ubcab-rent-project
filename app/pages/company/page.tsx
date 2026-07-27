@@ -319,10 +319,7 @@ function InvoiceSheet({
             fontSize: "11px",
             lineHeight: 2.1,
             minWidth: 200,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-            height: "100%",
+            alignSelf: "flex-end",
           }}
         >
           <Typography sx={{ fontSize: "11px" }}>
@@ -1315,7 +1312,7 @@ export default function CompanyPage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundImage: "url('/bg.png')",
+        // backgroundImage: "url('/bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
