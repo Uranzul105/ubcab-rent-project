@@ -9,7 +9,7 @@ export default function Page() {
       <div
         style={{
           position: "relative",
-          backgroundImage: "url('/bg.png')",
+          // backgroundImage: "url('/bg.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",

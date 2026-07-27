@@ -322,6 +322,7 @@ function InvoiceSheet({
             display: "flex",
             flexDirection: "column",
             justifyContent: "flex-end",
+            height: "100%",
           }}
         >
           <Typography sx={{ fontSize: "11px" }}>
@@ -372,7 +373,7 @@ function InvoiceSheet({
                 key={h}
                 style={{
                   background: "#185FA5",
-                  color: "#FFFFFF",
+                  color: "#16181D",
                   padding: "7px 10px",
                   fontWeight: 600,
                   fontSize: "11px",
@@ -954,7 +955,7 @@ function InvoiceView({
                       style={{
                         padding: "7px 8px",
                         fontWeight: 600,
-                        color: "#888",
+                        color: "#16181D",
                         textAlign: i === 0 || i === 1 ? "left" : "right",
                         width:
                           i === 0
