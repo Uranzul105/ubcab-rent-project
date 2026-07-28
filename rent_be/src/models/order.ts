@@ -17,6 +17,7 @@ export interface IOrder extends Document {
      transferred: boolean;
      transferredAt?: string; 
      regno?: string;  
+     paymentRef: { type: String, default: "" }, 
   }[];
 }
 
