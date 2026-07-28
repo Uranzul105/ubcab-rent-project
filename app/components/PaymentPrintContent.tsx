@@ -155,31 +155,28 @@ export default function PaymentPrintContent({
           fontFamily: "inherit",
         }}
       >
-        {/* Толгой мөр — лого зүүн дээд буланд */}
-        <Box sx={{ mb: 2 }}>
+        {/* Толгой мөр — лого зүүн, гарчиг үлдсэн зайд голлосон */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
           <img
             src="/logo.png"
             alt="ubcab"
             style={{ height: "56px", width: "auto" }}
           />
+          <Box sx={{ flex: 1, textAlign: "center" }}>
+            <Typography sx={{ fontSize: "20px", fontWeight: 800 }}>
+              Төлбөр зөвшөөрөх хуудас
+            </Typography>
+            <Typography sx={{ fontSize: "13px", fontWeight: 600 }}>
+              № {paymentRef}
+            </Typography>
+          </Box>
         </Box>
-
-        {/* Гарчиг — голлуулж, том фонттой */}
-        <Typography
-          sx={{
-            fontSize: "22px",
-            fontWeight: 800,
-            textAlign: "center",
-            mb: 0.5,
-          }}
-        >
-          Төлбөр зөвшөөрөх хуудас
-        </Typography>
-        <Typography
-          sx={{ fontSize: "14px", fontWeight: 600, textAlign: "center", mb: 3 }}
-        >
-          № {paymentRef}
-        </Typography>
 
         <Typography sx={{ fontSize: "13px", mb: 2 }}>
           {parseInt(y)} оны {parseInt(m)} сарын {parseInt(d)} өдөр
@@ -212,7 +209,8 @@ export default function PaymentPrintContent({
                 borderBottom: "1px solid #333",
                 display: "flex",
                 alignItems: "center",
-                pl: 1,
+                justifyContent: "center",
+                // pl: 1,
                 minHeight: "22px",
               }}
             >
@@ -255,17 +253,23 @@ export default function PaymentPrintContent({
             <tbody>
               {APPROVAL_ROLES.map((role) => (
                 <tr key={role}>
-                  <td style={{ border: "1px solid #000", padding: "8px 8px" }}>
+                  <td
+                    style={{
+                      border: "1px solid #000",
+                      padding: "6px 8px",
+                      textAlign: "center",
+                    }}
+                  >
                     {role}
                   </td>
                   <td
-                    style={{ border: "1px solid #000", padding: "8px 8px" }}
+                    style={{ border: "1px solid #000", padding: "6px 8px" }}
                   ></td>
                   <td
-                    style={{ border: "1px solid #000", padding: "8px 8px" }}
+                    style={{ border: "1px solid #000", padding: "6px 8px" }}
                   ></td>
                   <td
-                    style={{ border: "1px solid #000", padding: "8px 8px" }}
+                    style={{ border: "1px solid #000", padding: "6px 8px" }}
                   ></td>
                 </tr>
               ))}
