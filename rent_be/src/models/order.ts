@@ -17,7 +17,7 @@ export interface IOrder extends Document {
      transferred: boolean;
      transferredAt?: string; 
      regno?: string;  
-     paymentRef: { type: String, default: "" }, 
+    paymentRef?: string;
   }[];
 }
 
@@ -44,6 +44,7 @@ const OrderSchema = new Schema<IOrder>(
          transferred: { type: Boolean, default: false },
          transferredAt: { type: String, default: "" }, 
          regno: { type: String, default: "" },  
+         paymentRef: { type: String, default: "" }, 
       },
     ],
   },
