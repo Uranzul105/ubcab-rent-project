@@ -11,7 +11,7 @@ import Header from "@/app/components/Header";
 import { getOrders, updateOrder, Order } from "@/app/lib/orderService";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "next/navigation";
-import PaymentApprovalModal from "@/app/components/PaymentApprovalModal";
+import PaymentPrintContent from "@/app/components/PaymentPrintContent";
 
 const MONTHS = [
   "1-р сар",
@@ -135,6 +135,7 @@ type DriverEntry = {
   transferred: boolean;
   transferredAt?: string;
   regno: string;
+  paymentRef?: string;
 };
 
 export default function ReportPage() {
@@ -156,7 +157,12 @@ export default function ReportPage() {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(
     new Set(),
   );
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentPrint, setShowPaymentPrint] = useState(false);
+  const [paymentPrintData, setPaymentPrintData] = useState<{
+    totalAmount: number;
+    userName: string;
+    paymentRef: string;
+  } | null>(null);
 
   const searchParams = useSearchParams();
   const passedIds = useMemo(
@@ -203,6 +209,7 @@ export default function ReportPage() {
           transferred: d.transferred ?? false,
           transferredAt: (d as any).transferredAt ?? "",
           regno: d.regno ?? "",
+          paymentRef: (d as any).paymentRef ?? "",
         })),
       )
       .filter((d) => {
@@ -329,6 +336,49 @@ export default function ReportPage() {
     );
   };
 
+  if (showPaymentPrint && paymentPrintData) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            p: 2,
+            "@media print": { display: "none" },
+          }}
+        >
+          <Button
+            variant="outlined"
+            color="neutral"
+            onClick={() => setShowPaymentPrint(false)}
+          >
+            ← Буцах
+          </Button>
+          <Button
+            onClick={() => window.print()}
+            sx={{
+              backgroundColor: "#facc15",
+              color: "#000",
+              fontWeight: 700,
+              "&:hover": { backgroundColor: "#eab308" },
+            }}
+          >
+            PDF татах / хэвлэх
+          </Button>
+        </Box>
+        <Box
+          sx={{ maxWidth: 700, margin: "0 auto", padding: "0 40px 40px 40px" }}
+        >
+          <PaymentPrintContent
+            totalAmount={paymentPrintData.totalAmount}
+            userName={paymentPrintData.userName}
+            paymentRef={paymentPrintData.paymentRef}
+          />
+        </Box>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -377,13 +427,47 @@ export default function ReportPage() {
             <Box sx={{ display: "flex", gap: 1 }}>
               {selectedEntries.size > 0 && (
                 <Button
-                  onClick={() => setShowPaymentModal(true)}
-                  sx={{
-                    backgroundColor: "#2563EB",
-                    color: "#fff",
-                    borderRadius: "40px",
-                    fontWeight: 700,
-                    "&:hover": { backgroundColor: "#1D4ED8" },
+                  onClick={async () => {
+                    const selected = allEntries.filter((e) =>
+                      selectedEntries.has(`${e.orderId}-${e.driverIndex}`),
+                    );
+                    const totalAmount = selected.reduce(
+                      (s, e) => s + e.salary + e.fuel,
+                      0,
+                    );
+                    const today = new Date()
+                      .toISOString()
+                      .slice(0, 10)
+                      .replace(/-/g, "");
+                    const paymentRef = `ТЗ${today}01`;
+
+                    for (const entry of selected) {
+                      const order = orders.find(
+                        (o) => String(o._id) === entry.orderId,
+                      );
+                      if (!order) continue;
+                      const updatedDrivers = (order.drivers ?? []).map(
+                        (d, i) =>
+                          i === entry.driverIndex ? { ...d, paymentRef } : d,
+                      );
+                      await updateOrder(entry.orderId, {
+                        drivers: updatedDrivers,
+                      } as any);
+                      setOrders((prev) =>
+                        prev.map((o) =>
+                          String(o._id) === entry.orderId
+                            ? { ...o, drivers: updatedDrivers }
+                            : o,
+                        ),
+                      );
+                    }
+                    setSelectedEntries(new Set());
+                    setPaymentPrintData({
+                      totalAmount,
+                      userName: user?.name ?? "",
+                      paymentRef,
+                    });
+                    setShowPaymentPrint(true);
                   }}
                 >
                   Төлбөр зөвшөөрөх ({selectedEntries.size})
@@ -658,7 +742,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
+                        "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px 120px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -808,6 +892,15 @@ export default function ReportPage() {
                       }}
                       sx={{ fontSize: "11px", height: 30, width: 130 }}
                     />
+                    <Typography
+                      sx={{
+                        fontSize: "11px",
+                        color: "#2563EB",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {(entry as any).paymentRef || "—"}
+                    </Typography>
                   </Box>
                 ))}
               </Box>
@@ -900,39 +993,6 @@ export default function ReportPage() {
           )}
         </Box>
       </Box>
-      {showPaymentModal && (
-        <PaymentApprovalModal
-          totalAmount={allEntries
-            .filter((e) => selectedEntries.has(`${e.orderId}-${e.driverIndex}`))
-            .reduce((s, e) => s + e.salary + e.fuel, 0)}
-          userName={user?.name ?? ""}
-          onClose={() => setShowPaymentModal(false)}
-          onConfirm={async (paymentRef) => {
-            const selected = allEntries.filter((e) =>
-              selectedEntries.has(`${e.orderId}-${e.driverIndex}`),
-            );
-            for (const entry of selected) {
-              const order = orders.find((o) => String(o._id) === entry.orderId);
-              if (!order) continue;
-              const updatedDrivers = (order.drivers ?? []).map((d, i) =>
-                i === entry.driverIndex ? { ...d, paymentRef } : d,
-              );
-              await updateOrder(entry.orderId, {
-                drivers: updatedDrivers,
-              } as any);
-              setOrders((prev) =>
-                prev.map((o) =>
-                  String(o._id) === entry.orderId
-                    ? { ...o, drivers: updatedDrivers }
-                    : o,
-                ),
-              );
-            }
-            setSelectedEntries(new Set());
-            setShowPaymentModal(false);
-          }}
-        />
-      )}
     </div>
   );
 }

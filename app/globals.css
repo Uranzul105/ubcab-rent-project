@@ -26,6 +26,12 @@ body {
 }
 
 @media print {
-  body > * { display: none !important; }
-  #payment-print-area { display: block !important; }
+  body * { display: none !important; }
+  #payment-print-area,
+  #payment-print-area * { display: block !important; }
+  table { display: table !important; }
+  thead { display: table-header-group !important; }
+  tbody { display: table-row-group !important; }
+  tr { display: table-row !important; }
+  th, td { display: table-cell !important; }
 }
