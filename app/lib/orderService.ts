@@ -8,6 +8,7 @@ export type DriverRow = {
   transferred: boolean;
   regno?: string;
   orderType?: "sales" | "operations";
+  paymentRef?: string;
 };
 
 export type Order = {

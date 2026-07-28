@@ -333,7 +333,7 @@ export default function ReportPage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundImage: "url('/bg.png')",
+        // backgroundImage: "url('/bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -618,7 +618,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px",
+                    "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px 120px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -639,6 +639,7 @@ export default function ReportPage() {
                   "Шатахуун",
                   "Шилжүүлсэн",
                   "Огноо",
+                  "Баримт №",
                 ].map((h) => (
                   <Typography
                     key={h}
@@ -906,6 +907,30 @@ export default function ReportPage() {
             .reduce((s, e) => s + e.salary + e.fuel, 0)}
           userName={user?.name ?? ""}
           onClose={() => setShowPaymentModal(false)}
+          onConfirm={async (paymentRef) => {
+            const selected = allEntries.filter((e) =>
+              selectedEntries.has(`${e.orderId}-${e.driverIndex}`),
+            );
+            for (const entry of selected) {
+              const order = orders.find((o) => String(o._id) === entry.orderId);
+              if (!order) continue;
+              const updatedDrivers = (order.drivers ?? []).map((d, i) =>
+                i === entry.driverIndex ? { ...d, paymentRef } : d,
+              );
+              await updateOrder(entry.orderId, {
+                drivers: updatedDrivers,
+              } as any);
+              setOrders((prev) =>
+                prev.map((o) =>
+                  String(o._id) === entry.orderId
+                    ? { ...o, drivers: updatedDrivers }
+                    : o,
+                ),
+              );
+            }
+            setSelectedEntries(new Set());
+            setShowPaymentModal(false);
+          }}
         />
       )}
     </div>

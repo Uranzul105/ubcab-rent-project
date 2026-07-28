@@ -4,6 +4,7 @@ export interface IDriver extends Document {
   phone: string;
   name: string;
   regno: string;
+  paymentRef?: string;
 }
 
 const DriverSchema = new Schema<IDriver>(

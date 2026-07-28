@@ -26,6 +26,6 @@ body {
 }
 
 @media print {
-  body > *:not(#payment-print) { display: none !important; }
-  .no-print { display: none !important; }
+  body > * { display: none !important; }
+  #payment-print-area { display: block !important; }
 }
