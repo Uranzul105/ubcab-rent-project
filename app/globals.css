@@ -24,14 +24,3 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
-
-@media print {
-  body * { display: none !important; }
-  #payment-print-area,
-  #payment-print-area * { display: block !important; }
-  table { display: table !important; }
-  thead { display: table-header-group !important; }
-  tbody { display: table-row-group !important; }
-  tr { display: table-row !important; }
-  th, td { display: table-cell !important; }
-}

@@ -394,7 +394,7 @@ export default function ReportPage() {
         <Header />
       </div>
 
-      <Box sx={{ maxWidth: 1300, margin: "0 auto", padding: "24px" }}>
+      <Box sx={{ maxWidth: 1500, margin: "0 auto", padding: "24px" }}>
         <Box
           sx={{
             background: "rgba(255,255,255,0.95)",
@@ -702,7 +702,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px 120px",
+                    "30px 30px 80px 100px 100px 150px 130px 90px 90px 100px 100px 110px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -742,7 +742,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 30px 90px 110px 110px 160px 140px 100px 100px 100px 100px 120px",
+                        "30px 30px 80px 100px 100px 150px 130px 90px 90px 100px 100px 110px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,

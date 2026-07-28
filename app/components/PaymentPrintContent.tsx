@@ -89,6 +89,25 @@ const toMongolianWords = (num: number): string => {
   return r.charAt(0).toUpperCase() + r.slice(1);
 };
 
+const FIELD_ROWS = (userName: string, totalAmount: number) => [
+  {
+    label: "Төлбөр хүлээн авах компани/хувь хүн/ нэр",
+    value: "Жагсаалтын дагуу",
+  },
+  { label: "Дансны дугаар, банкны нэр", value: "Хэтэвч цэнэглэлт" },
+  { label: "Төлбөр хүссэн албан тушаал, нэр", value: userName },
+  { label: "Төлбөрийн зориулалт", value: "Машин түрээс" },
+  { label: "Үнийн дүн: тоогоор", value: `${totalAmount.toLocaleString()}₮` },
+  { label: "Үнийн дүн: үсгээр", value: toMongolianWords(totalAmount) },
+];
+
+const APPROVAL_ROLES = [
+  "Гүйцэтгэх захирал",
+  "Санхүү эрхэлсэн захирал",
+  "Алба/ хэлтэс хариуцсан захирал",
+  "Нягтлан бодогч",
+];
+
 export default function PaymentPrintContent({
   totalAmount,
   userName,
@@ -102,120 +121,153 @@ export default function PaymentPrintContent({
   const [y, m, d] = today.split("-");
 
   return (
-    <Box
-      sx={{
-        background: "#fff",
-        borderRadius: "12px",
-        border: "0.5px solid #e0e0e0",
-        padding: "28px 32px",
-        boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-        "@media print": {
-          boxShadow: "none",
-          border: "none",
-          borderRadius: 0,
-          padding: 0,
-        },
-      }}
-    >
-      <Typography
-        sx={{ fontSize: "16px", fontWeight: 800, textAlign: "center", mb: 0.5 }}
-      >
-        Төлбөр зөвшөөрөх хуудас
-      </Typography>
-      <Typography
+    <>
+      <style jsx global>{`
+        @page {
+          size: A4;
+          margin: 15mm;
+        }
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #payment-print-area,
+          #payment-print-area * {
+            visibility: visible;
+          }
+          #payment-print-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+          }
+        }
+      `}</style>
+
+      <Box
+        id="payment-print-area"
         sx={{
-          fontSize: "13px",
-          fontWeight: 700,
-          textAlign: "center",
-          color: "#2563EB",
-          mb: 3,
+          background: "#fff",
+          width: "100%",
+          maxWidth: "180mm",
+          margin: "0 auto",
+          padding: "0",
+          fontFamily: "inherit",
         }}
       >
-        № {paymentRef}
-      </Typography>
-      <Typography sx={{ fontSize: "13px", mb: 3 }}>
-        {parseInt(y)} оны {parseInt(m)} сарын {parseInt(d)} өдөр
-      </Typography>
-
-      {[
-        { label: "Төлбөр хүлээн авах компаний нэр", value: "Жагсаалтын дагуу" },
-        { label: "Дансны дугаар, банкны нэр", value: "Хэтэвч цэнэглэлт" },
-        { label: "Төлбөр хүссэн албан тушаал, нэр", value: userName },
-        { label: "Төлбөрийн зориулалт", value: "Машин түрээс" },
-        {
-          label: "Үнийн дүн: тоогоор",
-          value: `${totalAmount.toLocaleString()}₮`,
-        },
-        { label: "Үнийн дүн: үсгээр", value: toMongolianWords(totalAmount) },
-      ].map((row) => (
-        <Box key={row.label} sx={{ mb: 2 }}>
-          <Typography sx={{ fontSize: "12px", color: "#888" }}>
-            {row.label}:
+        {/* Толгой мөр — лого зүүн, гарчиг баруун */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            mb: 3,
+          }}
+        >
+          <img
+            src="/logo.png"
+            alt="ubcab"
+            style={{ height: "32px", width: "auto" }}
+          />
+          <Typography sx={{ fontSize: "14px", fontWeight: 700 }}>
+            Төлбөр зөвшөөрөх хуудас № {paymentRef}
           </Typography>
-          <Box sx={{ borderBottom: "1px solid #333", pb: 0.5, mt: 0.3 }}>
-            <Typography sx={{ fontSize: "13px", fontWeight: 600 }}>
+        </Box>
+
+        <Typography sx={{ fontSize: "13px", mb: 2 }}>
+          {parseInt(y)} оны {parseInt(m)} сар {parseInt(d)} өдөр
+        </Typography>
+
+        {/* Талбарууд — шошго зүүн, утга нэг мөрөнд баруун талд, доогуур зураастай */}
+        {FIELD_ROWS(userName, totalAmount).map((row) => (
+          <Box
+            key={row.label}
+            sx={{
+              display: "flex",
+              alignItems: "flex-end",
+              gap: 1,
+              mb: 1,
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: "12.5px",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {row.label}:
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: "13px",
+                fontWeight: 600,
+                flex: 1,
+                borderBottom: "1px solid #333",
+                pb: "2px",
+                pl: 1,
+              }}
+            >
               {row.value}
             </Typography>
           </Box>
-        </Box>
-      ))}
+        ))}
 
-      <Box sx={{ mt: 4, overflowX: "auto" }}>
-        <table
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}
-        >
-          <thead>
-            <tr style={{ background: "#F8FAFC" }}>
-              {["Албан тушаалтан", "Гарын үсэг", "Огноо", "Тайлбар"].map(
-                (h) => (
+        {/* Гарын үсгийн хүснэгт */}
+        <Box sx={{ mt: 3 }}>
+          <table
+            style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}
+          >
+            <thead>
+              <tr>
+                {[
+                  "Албан тушаалтан",
+                  "Гарын үсэг",
+                  "Огноо",
+                  "Тайлбар, зардлын данс, өртгийн төв",
+                ].map((h) => (
                   <th
                     key={h}
                     style={{
-                      border: "1px solid #ddd",
+                      border: "1px solid #000",
                       padding: "6px 8px",
                       textAlign: "left",
                       fontWeight: 600,
-                      color: "#555",
                     }}
                   >
                     {h}
                   </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              "Гүйцэтгэх захирал",
-              "Санхүү эрхэлсэн захирал",
-              "Ерөнхий нягтлан бодогч",
-              "Алба/хэлтэс хариуцсан захирал",
-              "Нягтлан бодогч",
-            ].map((role) => (
-              <tr key={role}>
-                <td style={{ border: "1px solid #ddd", padding: "16px 8px" }}>
-                  {role}
-                </td>
-                <td
-                  style={{ border: "1px solid #ddd", padding: "16px 8px" }}
-                ></td>
-                <td
-                  style={{ border: "1px solid #ddd", padding: "16px 8px" }}
-                ></td>
-                <td
-                  style={{ border: "1px solid #ddd", padding: "16px 8px" }}
-                ></td>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </Box>
+            </thead>
+            <tbody>
+              {APPROVAL_ROLES.map((role) => (
+                <tr key={role}>
+                  <td style={{ border: "1px solid #000", padding: "14px 8px" }}>
+                    {role}
+                  </td>
+                  <td
+                    style={{ border: "1px solid #000", padding: "14px 8px" }}
+                  ></td>
+                  <td
+                    style={{ border: "1px solid #000", padding: "14px 8px" }}
+                  ></td>
+                  <td
+                    style={{ border: "1px solid #000", padding: "14px 8px" }}
+                  ></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Box>
 
-      <Box sx={{ mt: 4 }}>
-        <Typography sx={{ fontSize: "12px" }}>
-          Төлбөрийн хүсэлт гаргасан: _________________________ / {userName} /
-        </Typography>
+        <Box sx={{ mt: 3 }}>
+          <Typography sx={{ fontSize: "12px" }}>
+            Төлбөрийн хүсэлт гаргасан : .......................................
+            / {userName} /
+          </Typography>
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }
