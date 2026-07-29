@@ -702,7 +702,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "30px 30px 90px 110px 110px 200px 150px 90px 90px 100px 200px 200px",
+                    "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -742,7 +742,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "30px 30px 90px 110px 110px 200px 150px 90px 90px 100px 200px 200px",
+                        "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,

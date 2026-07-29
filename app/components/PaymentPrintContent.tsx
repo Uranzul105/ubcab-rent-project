@@ -166,10 +166,10 @@ export default function PaymentPrintContent({
           <img
             src="/logo.png"
             alt="ubcab"
-            style={{ height: "56px", width: "auto" }}
+            style={{ height: "36px", width: "auto" }}
           />
           <Box sx={{ flex: 1, textAlign: "center" }}>
-            <Typography sx={{ fontSize: "20px", fontWeight: 800 }}>
+            <Typography sx={{ fontSize: "18px", fontWeight: 800 }}>
               Төлбөр зөвшөөрөх хуудас
             </Typography>
             <Typography sx={{ fontSize: "13px", fontWeight: 600 }}>
@@ -198,6 +198,7 @@ export default function PaymentPrintContent({
                 fontSize: "12.5px",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
+                width: "230px",
                 lineHeight: 1,
               }}
             >
@@ -211,7 +212,7 @@ export default function PaymentPrintContent({
                 alignItems: "center",
                 justifyContent: "center",
                 // pl: 1,
-                minHeight: "22px",
+                minHeight: "20px",
               }}
             >
               <Typography
@@ -257,7 +258,7 @@ export default function PaymentPrintContent({
                     style={{
                       border: "1px solid #000",
                       padding: "6px 8px",
-                      textAlign: "center",
+                      textAlign: "left",
                     }}
                   >
                     {role}
