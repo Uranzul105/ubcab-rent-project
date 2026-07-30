@@ -309,6 +309,7 @@ export default function ReportPage() {
         "Нийт",
         "Шилжүүлсэн",
         "Шилжүүлсэн огноо",
+        "Баримт №",
       ],
       ...allEntries.map((d, i) => [
         i + 1,
@@ -322,10 +323,11 @@ export default function ReportPage() {
         d.salary + d.fuel,
         d.transferred ? "Тийм" : "Үгүй",
         d.transferredAt || "—",
+        d.paymentRef || "—",
       ]),
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"] = [4, 12, 12, 12, 18, 18, 12, 12, 12, 12, 12].map((w) => ({
+    ws["!cols"] = [4, 12, 12, 12, 18, 18, 12, 12, 12, 12, 12, 14].map((w) => ({
       wch: w,
     }));
     const wb = XLSX.utils.book_new();
