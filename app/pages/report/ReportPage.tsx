@@ -136,6 +136,7 @@ type DriverEntry = {
   transferredAt?: string;
   regno: string;
   paymentRef?: string;
+  note?: string;
 };
 
 export default function ReportPage() {
@@ -210,6 +211,7 @@ export default function ReportPage() {
           transferredAt: (d as any).transferredAt ?? "",
           regno: d.regno ?? "",
           paymentRef: (d as any).paymentRef ?? "",
+          note: (d as any).note ?? "",
         })),
       )
       .filter((d) => {
@@ -310,6 +312,7 @@ export default function ReportPage() {
         "Шилжүүлсэн",
         "Шилжүүлсэн огноо",
         "Баримт №",
+        "Тайлбар",
       ],
       ...allEntries.map((d, i) => [
         i + 1,
@@ -324,12 +327,15 @@ export default function ReportPage() {
         d.transferred ? "Тийм" : "Үгүй",
         d.transferredAt || "—",
         d.paymentRef || "—",
+        (d as any).note || "—",
       ]),
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"] = [4, 12, 12, 12, 18, 18, 12, 12, 12, 12, 12, 14].map((w) => ({
-      wch: w,
-    }));
+    ws["!cols"] = [4, 12, 12, 12, 18, 18, 12, 12, 12, 12, 12, 14, 20].map(
+      (w) => ({
+        wch: w,
+      }),
+    );
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Тайлан");
     XLSX.writeFile(
@@ -713,8 +719,33 @@ export default function ReportPage() {
                   mb: 0.5,
                 }}
               >
+                <input
+                  type="checkbox"
+                  checked={
+                    selectedEntries.size === allEntries.length &&
+                    allEntries.length > 0
+                  }
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedEntries(
+                        new Set(
+                          allEntries.map(
+                            (e) => `${e.orderId}-${e.driverIndex}`,
+                          ),
+                        ),
+                      );
+                    } else {
+                      setSelectedEntries(new Set());
+                    }
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    accentColor: "#facc15",
+                    width: 14,
+                    height: 14,
+                  }}
+                />
                 {[
-                  "",
                   "#",
                   "Огноо",
                   "Утас",
@@ -726,6 +757,7 @@ export default function ReportPage() {
                   "Шилжүүлсэн",
                   "Огноо",
                   "Баримт №",
+                  "Тайлбар",
                 ].map((h) => (
                   <Typography
                     key={h}
@@ -744,7 +776,7 @@ export default function ReportPage() {
                     sx={{
                       display: "grid",
                       gridTemplateColumns:
-                        "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px",
+                        "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px 1fr",
                       gap: 1,
                       px: 1.5,
                       py: 1.2,
@@ -903,6 +935,33 @@ export default function ReportPage() {
                     >
                       {(entry as any).paymentRef || "—"}
                     </Typography>
+                    <Input
+                      placeholder="Тайлбар..."
+                      value={(entry as any).note ?? ""}
+                      onChange={async (e) => {
+                        const order = orders.find(
+                          (o) => String(o._id) === entry.orderId,
+                        );
+                        if (!order) return;
+                        const updatedDrivers = (order.drivers ?? []).map(
+                          (d, i) =>
+                            i === entry.driverIndex
+                              ? { ...d, note: e.target.value }
+                              : d,
+                        );
+                        await updateOrder(entry.orderId, {
+                          drivers: updatedDrivers,
+                        } as any);
+                        setOrders((prev) =>
+                          prev.map((o) =>
+                            String(o._id) === entry.orderId
+                              ? { ...o, drivers: updatedDrivers }
+                              : o,
+                          ),
+                        );
+                      }}
+                      sx={{ fontSize: "11px", height: 30 }}
+                    />
                   </Box>
                 ))}
               </Box>
