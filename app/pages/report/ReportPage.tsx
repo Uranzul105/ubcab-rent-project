@@ -158,6 +158,7 @@ export default function ReportPage() {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(
     new Set(),
   );
+  const [noteEdits, setNoteEdits] = useState<Record<string, string>>({});
   const [showPaymentPrint, setShowPaymentPrint] = useState(false);
   const [paymentPrintData, setPaymentPrintData] = useState<{
     totalAmount: number;
@@ -277,6 +278,22 @@ export default function ReportPage() {
             transferredAt: !d.transferred ? now : "",
           }
         : d,
+    );
+    await updateOrder(entry.orderId, { drivers: updatedDrivers } as any);
+    setOrders((prev) =>
+      prev.map((o) =>
+        String(o._id) === entry.orderId ? { ...o, drivers: updatedDrivers } : o,
+      ),
+    );
+  };
+
+  const saveNote = async (entry: DriverEntry, key: string) => {
+    const value = noteEdits[key];
+    if (value === undefined || value === (entry.note ?? "")) return;
+    const order = orders.find((o) => String(o._id) === entry.orderId);
+    if (!order) return;
+    const updatedDrivers = (order.drivers ?? []).map((d, i) =>
+      i === entry.driverIndex ? { ...d, note: value } : d,
     );
     await updateOrder(entry.orderId, { drivers: updatedDrivers } as any);
     setOrders((prev) =>
@@ -710,7 +727,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px",
+                    "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px 1fr",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -937,30 +954,27 @@ export default function ReportPage() {
                     </Typography>
                     <Input
                       placeholder="Тайлбар..."
-                      value={(entry as any).note ?? ""}
-                      onChange={async (e) => {
-                        const order = orders.find(
-                          (o) => String(o._id) === entry.orderId,
-                        );
-                        if (!order) return;
-                        const updatedDrivers = (order.drivers ?? []).map(
-                          (d, i) =>
-                            i === entry.driverIndex
-                              ? { ...d, note: e.target.value }
-                              : d,
-                        );
-                        await updateOrder(entry.orderId, {
-                          drivers: updatedDrivers,
-                        } as any);
-                        setOrders((prev) =>
-                          prev.map((o) =>
-                            String(o._id) === entry.orderId
-                              ? { ...o, drivers: updatedDrivers }
-                              : o,
-                          ),
-                        );
+                      value={
+                        noteEdits[`${entry.orderId}-${entry.driverIndex}`] ??
+                        entry.note ??
+                        ""
+                      }
+                      onChange={(e) => {
+                        const key = `${entry.orderId}-${entry.driverIndex}`;
+                        setNoteEdits((prev) => ({
+                          ...prev,
+                          [key]: e.target.value,
+                        }));
                       }}
-                      sx={{ fontSize: "11px", height: 30 }}
+                      onBlur={() =>
+                        saveNote(entry, `${entry.orderId}-${entry.driverIndex}`)
+                      }
+                      sx={{
+                        fontSize: "12px",
+                        height: 30,
+                        width: "100%",
+                        minWidth: 160,
+                      }}
                     />
                   </Box>
                 ))}
