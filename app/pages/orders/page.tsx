@@ -82,6 +82,7 @@ export default function OrdersPage() {
   const [confirmVariant, setConfirmVariant] = useState<"danger" | "success">(
     "danger",
   );
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
   const showConfirm = (
     message: string,
@@ -369,6 +370,30 @@ export default function OrdersPage() {
               </Typography>
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
+              {selectedOrders.size > 0 && user?.role === "admin" && (
+                <Button
+                  onClick={async () => {
+                    for (const id of selectedOrders) {
+                      await updateOrder(id, { noteDone: true } as any);
+                      setOrders((prev) =>
+                        prev.map((o) =>
+                          String(o._id) === id ? { ...o, noteDone: true } : o,
+                        ),
+                      );
+                    }
+                    setSelectedOrders(new Set());
+                  }}
+                  sx={{
+                    backgroundColor: "#16A34A",
+                    color: "#fff",
+                    borderRadius: "40px",
+                    fontWeight: 700,
+                    "&:hover": { backgroundColor: "#15803D" },
+                  }}
+                >
+                  ✓ НӨАТ шивсэн ({selectedOrders.size})
+                </Button>
+              )}
               <Button
                 onClick={handleExport}
                 variant="outlined"
@@ -393,6 +418,36 @@ export default function OrdersPage() {
                 </Button>
               )}
             </Box>
+          </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <input
+              type="checkbox"
+              checked={
+                selectedOrders.size === filteredOrders.length &&
+                filteredOrders.length > 0
+              }
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedOrders(
+                    new Set(filteredOrders.map((o) => String(o._id))),
+                  );
+                } else {
+                  setSelectedOrders(new Set());
+                }
+              }}
+              style={{
+                cursor: "pointer",
+                accentColor: "#facc15",
+                width: 14,
+                height: 14,
+              }}
+            />
+            <Typography sx={{ fontSize: "12px", color: "#888" }}>
+              {selectedOrders.size > 0
+                ? `${selectedOrders.size} захиалга сонгогдсон`
+                : "Бүгдийг сонгох"}
+            </Typography>
           </Box>
 
           {/* 2-р мөр */}
@@ -619,6 +674,26 @@ export default function OrdersPage() {
                         gap: 2,
                       }}
                     >
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.has(String(order._id))}
+                        onChange={(e) => {
+                          setSelectedOrders((prev) => {
+                            const next = new Set(prev);
+                            e.target.checked
+                              ? next.add(String(order._id))
+                              : next.delete(String(order._id));
+                            return next;
+                          });
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          accentColor: "#facc15",
+                          width: 14,
+                          height: 14,
+                        }}
+                      />
+
                       <Typography
                         sx={{
                           fontSize: "12px",
@@ -808,9 +883,7 @@ export default function OrdersPage() {
                               type="checkbox"
                               checked={(order as any).noteDone ?? false}
                               onChange={async (e) => {
-                                await updateOrder(String(order._id), {
-                                  noteDone: e.target.checked,
-                                } as any);
+                                // Эхлээд UI шинэчилнэ
                                 setOrders((prev) =>
                                   prev.map((o) =>
                                     String(o._id) === String(order._id)
@@ -818,6 +891,10 @@ export default function OrdersPage() {
                                       : o,
                                   ),
                                 );
+                                // Дараа нь backend-д хадгална
+                                await updateOrder(String(order._id), {
+                                  noteDone: e.target.checked,
+                                } as any);
                               }}
                               style={{
                                 cursor: "pointer",
