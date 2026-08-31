@@ -797,6 +797,47 @@ export default function OrdersPage() {
                             }}
                             sx={{ fontSize: "11px", height: 26, width: 150 }}
                           />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(order as any).noteDone ?? false}
+                              onChange={async (e) => {
+                                await updateOrder(String(order._id), {
+                                  noteDone: e.target.checked,
+                                } as any);
+                                setOrders((prev) =>
+                                  prev.map((o) =>
+                                    String(o._id) === String(order._id)
+                                      ? { ...o, noteDone: e.target.checked }
+                                      : o,
+                                  ),
+                                );
+                              }}
+                              style={{
+                                cursor: "pointer",
+                                accentColor: "#16A34A",
+                                width: 14,
+                                height: 14,
+                              }}
+                            />
+                            <Typography
+                              sx={{
+                                fontSize: "11px",
+                                color: (order as any).noteDone
+                                  ? "#16A34A"
+                                  : "#9CA3AF",
+                              }}
+                            >
+                              {(order as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
+                            </Typography>
+                          </Box>
+
                           {(order as any).orderType && (
                             <Box
                               sx={{
@@ -886,26 +927,17 @@ export default function OrdersPage() {
                             }}
                             sx={{ fontSize: "11px", height: 26, width: 150 }}
                           />
-                          <Input
-                            placeholder="Тайлбар..."
-                            size="sm"
-                            value={(order as any).note ?? ""}
-                            onChange={(e) => {
-                              setOrders((prev) =>
-                                prev.map((o) =>
-                                  String(o._id) === String(order._id)
-                                    ? { ...o, note: e.target.value }
-                                    : o,
-                                ),
-                              );
-                            }}
-                            onBlur={async (e) => {
-                              await updateOrder(String(order._id), {
-                                note: e.target.value,
-                              } as any);
-                            }}
-                            sx={{ fontSize: "11px", height: 26, width: 150 }}
-                          />
+                          {(order as any).noteDone && (
+                            <Typography
+                              sx={{
+                                fontSize: "11px",
+                                color: "#16A34A",
+                                fontWeight: 700,
+                              }}
+                            >
+                              ✓ НӨАТ
+                            </Typography>
+                          )}
                           <Box
                             sx={{
                               display: "flex",
