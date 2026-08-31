@@ -710,91 +710,6 @@ export default function OrdersPage() {
                                   </Typography>
                                 )}
                               </Box>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <Input
-                                  placeholder="Тайлбар..."
-                                  size="sm"
-                                  value={(d as any).note ?? ""}
-                                  onChange={(e) => {
-                                    const updatedDrivers = (
-                                      order.drivers ?? []
-                                    ).map((dr, idx) =>
-                                      idx === i
-                                        ? { ...dr, note: e.target.value }
-                                        : dr,
-                                    );
-                                    setOrders((prev) =>
-                                      prev.map((o) =>
-                                        String(o._id) === String(order._id)
-                                          ? { ...o, drivers: updatedDrivers }
-                                          : o,
-                                      ),
-                                    );
-                                  }}
-                                  onBlur={async (e) => {
-                                    const updatedDrivers = (
-                                      order.drivers ?? []
-                                    ).map((dr, idx) =>
-                                      idx === i
-                                        ? { ...dr, note: e.target.value }
-                                        : dr,
-                                    );
-                                    await updateOrder(String(order._id), {
-                                      drivers: updatedDrivers,
-                                    } as any);
-                                  }}
-                                  sx={{
-                                    fontSize: "11px",
-                                    height: 26,
-                                    width: 150,
-                                  }}
-                                />
-                                <input
-                                  type="checkbox"
-                                  checked={(d as any).noteDone ?? false}
-                                  onChange={async (e) => {
-                                    const updatedDrivers = (
-                                      order.drivers ?? []
-                                    ).map((dr, idx) =>
-                                      idx === i
-                                        ? { ...dr, noteDone: e.target.checked }
-                                        : dr,
-                                    );
-                                    await updateOrder(String(order._id), {
-                                      drivers: updatedDrivers,
-                                    } as any);
-                                    setOrders((prev) =>
-                                      prev.map((o) =>
-                                        String(o._id) === String(order._id)
-                                          ? { ...o, drivers: updatedDrivers }
-                                          : o,
-                                      ),
-                                    );
-                                  }}
-                                  style={{
-                                    cursor: "pointer",
-                                    accentColor: "#16A34A",
-                                    width: 14,
-                                    height: 14,
-                                  }}
-                                />
-                                <Typography
-                                  sx={{
-                                    fontSize: "11px",
-                                    color: (d as any).noteDone
-                                      ? "#16A34A"
-                                      : "#9CA3AF",
-                                  }}
-                                >
-                                  {(d as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
-                                </Typography>
-                              </Box>
                             </Box>
                           ))}
                         </Box>
@@ -971,6 +886,66 @@ export default function OrdersPage() {
                             }}
                             sx={{ fontSize: "11px", height: 26, width: 150 }}
                           />
+                          <Input
+                            placeholder="Тайлбар..."
+                            size="sm"
+                            value={(order as any).note ?? ""}
+                            onChange={(e) => {
+                              setOrders((prev) =>
+                                prev.map((o) =>
+                                  String(o._id) === String(order._id)
+                                    ? { ...o, note: e.target.value }
+                                    : o,
+                                ),
+                              );
+                            }}
+                            onBlur={async (e) => {
+                              await updateOrder(String(order._id), {
+                                note: e.target.value,
+                              } as any);
+                            }}
+                            sx={{ fontSize: "11px", height: 26, width: 150 }}
+                          />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(order as any).noteDone ?? false}
+                              onChange={async (e) => {
+                                await updateOrder(String(order._id), {
+                                  noteDone: e.target.checked,
+                                } as any);
+                                setOrders((prev) =>
+                                  prev.map((o) =>
+                                    String(o._id) === String(order._id)
+                                      ? { ...o, noteDone: e.target.checked }
+                                      : o,
+                                  ),
+                                );
+                              }}
+                              style={{
+                                cursor: "pointer",
+                                accentColor: "#16A34A",
+                                width: 14,
+                                height: 14,
+                              }}
+                            />
+                            <Typography
+                              sx={{
+                                fontSize: "11px",
+                                color: (order as any).noteDone
+                                  ? "#16A34A"
+                                  : "#9CA3AF",
+                              }}
+                            >
+                              {(order as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
+                            </Typography>
+                          </Box>
                           <Box
                             sx={{
                               display: "flex",

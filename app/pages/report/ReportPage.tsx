@@ -450,6 +450,52 @@ export default function ReportPage() {
               </Typography>
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
+              {selectedEntries.size > 0 && user?.role === "admin" && (
+                <Button
+                  onClick={async () => {
+                    const selected = allEntries.filter((e) =>
+                      selectedEntries.has(`${e.orderId}-${e.driverIndex}`),
+                    );
+                    for (const entry of selected) {
+                      const order = orders.find(
+                        (o) => String(o._id) === entry.orderId,
+                      );
+                      if (!order) continue;
+                      const now = new Date().toISOString().slice(0, 10);
+                      const updatedDrivers = (order.drivers ?? []).map(
+                        (d, i) =>
+                          i === entry.driverIndex
+                            ? {
+                                ...d,
+                                transferred: true,
+                                transferredAt: (d as any).transferredAt || now,
+                              }
+                            : d,
+                      );
+                      await updateOrder(entry.orderId, {
+                        drivers: updatedDrivers,
+                      } as any);
+                      setOrders((prev) =>
+                        prev.map((o) =>
+                          String(o._id) === entry.orderId
+                            ? { ...o, drivers: updatedDrivers }
+                            : o,
+                        ),
+                      );
+                    }
+                    setSelectedEntries(new Set());
+                  }}
+                  sx={{
+                    backgroundColor: "#16A34A",
+                    color: "#fff",
+                    borderRadius: "40px",
+                    fontWeight: 700,
+                    "&:hover": { backgroundColor: "#15803D" },
+                  }}
+                >
+                  Шилжүүлсэн болгох ({selectedEntries.size})
+                </Button>
+              )}
               {selectedEntries.size > 0 && (
                 <Button
                   onClick={async () => {
