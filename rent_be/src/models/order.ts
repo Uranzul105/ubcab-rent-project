@@ -9,6 +9,7 @@ export interface IOrder extends Document {
   managerId: number;
   managerName: string;
   orderType?: "sales" | "operations"; 
+  note?: string; 
   drivers: {
     phone: string;
     name: string;
@@ -19,6 +20,7 @@ export interface IOrder extends Document {
      regno?: string;  
     paymentRef?: string;
     note?: string;
+    noteDone?: boolean; 
   }[];
 }
 
@@ -36,6 +38,7 @@ const OrderSchema = new Schema<IOrder>(
     managerId: { type: Number, required: true },
     managerName: { type: String, required: true },
     orderType: { type: String, enum: ["sales", "operations"] },
+    note: { type: String, default: "" },
     drivers: [
       {
         phone: String,
@@ -46,7 +49,8 @@ const OrderSchema = new Schema<IOrder>(
          transferredAt: { type: String, default: "" }, 
          regno: { type: String, default: "" },  
          paymentRef: { type: String, default: "" }, 
-         note: { type: String, default: "" },   
+         note: { type: String, default: "" },  
+         noteDone: { type: Boolean, default: false }, 
       },
     ],
   },
