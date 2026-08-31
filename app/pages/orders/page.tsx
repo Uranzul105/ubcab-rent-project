@@ -70,6 +70,10 @@ export default function OrdersPage() {
   const [filterStatus, setFilterStatus] = useState<
     "all" | "new" | "active" | "done" | "cancelled"
   >("all");
+  const [filterOrderType, setFilterOrderType] = useState("all");
+  const [filterTransferred, setFilterTransferred] = useState<
+    "all" | "transferred" | "pending"
+  >("all");
 
   // Custom confirm modal
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -78,7 +82,6 @@ export default function OrdersPage() {
   const [confirmVariant, setConfirmVariant] = useState<"danger" | "success">(
     "danger",
   );
-  const [filterOrderType, setFilterOrderType] = useState("all");
 
   const showConfirm = (
     message: string,
@@ -100,10 +103,7 @@ export default function OrdersPage() {
   }, []);
 
   const managers = useMemo(() => {
-    const names = [
-      ...new Set(orders.map((o) => o.managerName).filter(Boolean)),
-    ];
-    return names;
+    return [...new Set(orders.map((o) => o.managerName).filter(Boolean))];
   }, [orders]);
 
   const filteredOrders = orders
@@ -128,6 +128,12 @@ export default function OrdersPage() {
         filterOrderType === "all"
           ? true
           : (o as any).orderType === filterOrderType;
+      const matchTransferred =
+        filterTransferred === "all"
+          ? true
+          : filterTransferred === "transferred"
+            ? (o.drivers ?? []).every((d) => d.transferred)
+            : (o.drivers ?? []).some((d) => !d.transferred);
       return (
         matchFrom &&
         matchTo &&
@@ -136,7 +142,8 @@ export default function OrdersPage() {
         matchPaid &&
         matchManager &&
         matchStatus &&
-        matchOrderType
+        matchOrderType &&
+        matchTransferred
       );
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -181,7 +188,7 @@ export default function OrdersPage() {
       userId: user?.id ?? 0,
       userName: user?.name ?? "",
       userRole: user?.role ?? "",
-      changes: `Захиалга засагдлаа — ${editOrder.customerName} — ${(editOrder.totalAmount ?? 0).toLocaleString()}₮`,
+      changes: `Захиалга засагдлаа — ${editOrder.customerName}`,
     });
     closeModal();
   };
@@ -217,7 +224,7 @@ export default function OrdersPage() {
           userId: user?.id ?? 0,
           userName: user?.name ?? "",
           userRole: user?.role ?? "",
-          changes: `Захиалга устгагдлаа — ${order?.customerName} — ${(order?.totalAmount ?? 0).toLocaleString()}₮`,
+          changes: `Захиалга устгагдлаа — ${order?.customerName}`,
         });
       },
       "danger",
@@ -226,7 +233,7 @@ export default function OrdersPage() {
 
   const handleSendToFinance = (orderId: string) => {
     showConfirm(
-      "Санхүү рүү шилжүүлэх үү?",
+      "Тайлан рүү шилжүүлэх үү?",
       () => {
         window.location.href = `/pages/report?ids=${orderId}`;
       },
@@ -314,11 +321,13 @@ export default function OrdersPage() {
 
   const canSend = (status: string) => status === "active" || status === "done";
 
+  const SEL = { fontSize: "13px", height: 36 };
+
   return (
     <div
       style={{
         minHeight: "100vh",
-        // backgroundImage: "url('/bg.png')",
+        backgroundImage: "url('/bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -339,7 +348,7 @@ export default function OrdersPage() {
             boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
           }}
         >
-          {/* 1-р мөр: Гарчиг + товч */}
+          {/* 1-р мөр */}
           <Box
             sx={{
               display: "flex",
@@ -386,7 +395,7 @@ export default function OrdersPage() {
             </Box>
           </Box>
 
-          {/* 2-р мөр: Төлбөр + Төлөв + Менежер — баруун тийш */}
+          {/* 2-р мөр */}
           <Box
             sx={{
               display: "flex",
@@ -404,7 +413,7 @@ export default function OrdersPage() {
                   resetPage();
                 }
               }}
-              sx={{ fontSize: "13px", height: 36, width: 120, flexShrink: 0 }}
+              sx={{ ...SEL, width: 120, flexShrink: 0 }}
             >
               <Option value="all">Бүгд</Option>
               <Option value="paid">Төлсөн</Option>
@@ -418,30 +427,13 @@ export default function OrdersPage() {
                   resetPage();
                 }
               }}
-              sx={{ fontSize: "13px", height: 36, width: 150, flexShrink: 0 }}
+              sx={{ ...SEL, width: 150, flexShrink: 0 }}
             >
               <Option value="all">Бүх төлөв</Option>
               <Option value="new">Шинэ</Option>
               <Option value="active">Хийгдэж байна</Option>
               <Option value="done">Дууссан</Option>
               <Option value="cancelled">Цуцалсан</Option>
-            </Select>
-            <Select
-              value={filterManager}
-              onChange={(_, v) => {
-                if (v) {
-                  setFilterManager(v as string);
-                  resetPage();
-                }
-              }}
-              sx={{ fontSize: "13px", height: 36, width: 160, flexShrink: 0 }}
-            >
-              <Option value="all">Бүх менежер</Option>
-              {managers.map((m) => (
-                <Option key={m} value={m}>
-                  {m}
-                </Option>
-              ))}
             </Select>
             <Select
               value={filterOrderType}
@@ -451,15 +443,46 @@ export default function OrdersPage() {
                   resetPage();
                 }
               }}
-              sx={{ fontSize: "13px", height: 36, width: 190, flexShrink: 0 }}
+              sx={{ ...SEL, width: 190, flexShrink: 0 }}
             >
               <Option value="all">Бүх төрөл</Option>
               <Option value="sales">Борлуулалт</Option>
               <Option value="operations">Маркетинг, үйл ажиллагаа</Option>
             </Select>
+            <Select
+              value={filterTransferred}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterTransferred(v as any);
+                  resetPage();
+                }
+              }}
+              sx={{ ...SEL, width: 160, flexShrink: 0 }}
+            >
+              <Option value="all">Бүх шилжүүлэг</Option>
+              <Option value="transferred">Шилжүүлсэн</Option>
+              <Option value="pending">Шилжүүлээгүй</Option>
+            </Select>
+            <Select
+              value={filterManager}
+              onChange={(_, v) => {
+                if (v) {
+                  setFilterManager(v as string);
+                  resetPage();
+                }
+              }}
+              sx={{ ...SEL, width: 160, flexShrink: 0 }}
+            >
+              <Option value="all">Бүх менежер</Option>
+              {managers.map((m) => (
+                <Option key={m} value={m}>
+                  {m}
+                </Option>
+              ))}
+            </Select>
           </Box>
 
-          {/* 3-р мөр: Огноо + Нэр хайлт */}
+          {/* 3-р мөр */}
           <Box
             sx={{
               display: "flex",
@@ -480,7 +503,7 @@ export default function OrdersPage() {
                 setFilterFrom(e.target.value);
                 resetPage();
               }}
-              sx={{ fontSize: "13px", height: 36, width: 180, flexShrink: 0 }}
+              sx={{ ...SEL, width: 145, flexShrink: 0 }}
             />
             <Typography sx={{ fontSize: "13px", color: "#888", flexShrink: 0 }}>
               -
@@ -492,7 +515,7 @@ export default function OrdersPage() {
                 setFilterTo(e.target.value);
                 resetPage();
               }}
-              sx={{ fontSize: "13px", height: 36, width: 180, flexShrink: 0 }}
+              sx={{ ...SEL, width: 145, flexShrink: 0 }}
             />
             <Input
               placeholder="Захиалагчийн нэр..."
@@ -504,7 +527,7 @@ export default function OrdersPage() {
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{ fontSize: "13px", height: 36, flex: 1, minWidth: 160 }}
+              sx={{ ...SEL, flex: 1, minWidth: 160, flexShrink: 1 }}
             />
             <Input
               placeholder="Жолоочийн нэр..."
@@ -516,7 +539,7 @@ export default function OrdersPage() {
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
               }
-              sx={{ fontSize: "13px", height: 36, flex: 1, minWidth: 160 }}
+              sx={{ ...SEL, flex: 1, minWidth: 160, flexShrink: 1 }}
             />
             {(filterFrom ||
               filterTo ||
@@ -524,7 +547,9 @@ export default function OrdersPage() {
               filterDriver ||
               filterPaid !== "all" ||
               filterManager !== "all" ||
-              filterStatus !== "all") && (
+              filterStatus !== "all" ||
+              filterOrderType !== "all" ||
+              filterTransferred !== "all") && (
               <Button
                 variant="outlined"
                 color="neutral"
@@ -537,6 +562,7 @@ export default function OrdersPage() {
                   setFilterManager("all");
                   setFilterStatus("all");
                   setFilterOrderType("all");
+                  setFilterTransferred("all");
                   resetPage();
                 }}
                 sx={{
@@ -636,7 +662,7 @@ export default function OrdersPage() {
                           sx={{
                             display: "flex",
                             flexDirection: "column",
-                            gap: 0.3,
+                            gap: 0.5,
                           }}
                         >
                           {(order.drivers ?? []).map((d, i) => (
@@ -644,33 +670,131 @@ export default function OrdersPage() {
                               key={i}
                               sx={{
                                 display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexWrap: "wrap",
+                                flexDirection: "column",
+                                gap: 0.3,
                               }}
                             >
-                              <Typography
-                                sx={{ fontSize: "12px", color: "#999" }}
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  flexWrap: "wrap",
+                                }}
                               >
-                                🚗 {d.name} — цалин:{" "}
-                                {(d.salary ?? 0).toLocaleString()}₮
-                                {(d.fuel ?? 0) > 0 && (
-                                  <span
-                                    style={{ color: "#D97706" }}
-                                  >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
+                                <Typography
+                                  sx={{ fontSize: "12px", color: "#999" }}
+                                >
+                                  🚗 {d.name} — цалин:{" "}
+                                  {(d.salary ?? 0).toLocaleString()}₮
+                                  {(d.fuel ?? 0) > 0 && (
+                                    <span
+                                      style={{ color: "#D97706" }}
+                                    >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
+                                  )}
+                                  {((d as any).advanceSalary ?? 0) > 0 && (
+                                    <span
+                                      style={{ color: "#7C3AED" }}
+                                    >{` 💰 ${((d as any).advanceSalary ?? 0).toLocaleString()}₮`}</span>
+                                  )}
+                                </Typography>
+                                {d.transferred && (
+                                  <Typography
+                                    sx={{
+                                      fontSize: "11px",
+                                      color: "#16A34A",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    ✓ Шилжүүлсэн
+                                  </Typography>
                                 )}
-                              </Typography>
-                              {d.transferred && (
+                              </Box>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                <Input
+                                  placeholder="Тайлбар..."
+                                  size="sm"
+                                  value={(d as any).note ?? ""}
+                                  onChange={(e) => {
+                                    const updatedDrivers = (
+                                      order.drivers ?? []
+                                    ).map((dr, idx) =>
+                                      idx === i
+                                        ? { ...dr, note: e.target.value }
+                                        : dr,
+                                    );
+                                    setOrders((prev) =>
+                                      prev.map((o) =>
+                                        String(o._id) === String(order._id)
+                                          ? { ...o, drivers: updatedDrivers }
+                                          : o,
+                                      ),
+                                    );
+                                  }}
+                                  onBlur={async (e) => {
+                                    const updatedDrivers = (
+                                      order.drivers ?? []
+                                    ).map((dr, idx) =>
+                                      idx === i
+                                        ? { ...dr, note: e.target.value }
+                                        : dr,
+                                    );
+                                    await updateOrder(String(order._id), {
+                                      drivers: updatedDrivers,
+                                    } as any);
+                                  }}
+                                  sx={{
+                                    fontSize: "11px",
+                                    height: 26,
+                                    width: 150,
+                                  }}
+                                />
+                                <input
+                                  type="checkbox"
+                                  checked={(d as any).noteDone ?? false}
+                                  onChange={async (e) => {
+                                    const updatedDrivers = (
+                                      order.drivers ?? []
+                                    ).map((dr, idx) =>
+                                      idx === i
+                                        ? { ...dr, noteDone: e.target.checked }
+                                        : dr,
+                                    );
+                                    await updateOrder(String(order._id), {
+                                      drivers: updatedDrivers,
+                                    } as any);
+                                    setOrders((prev) =>
+                                      prev.map((o) =>
+                                        String(o._id) === String(order._id)
+                                          ? { ...o, drivers: updatedDrivers }
+                                          : o,
+                                      ),
+                                    );
+                                  }}
+                                  style={{
+                                    cursor: "pointer",
+                                    accentColor: "#16A34A",
+                                    width: 14,
+                                    height: 14,
+                                  }}
+                                />
                                 <Typography
                                   sx={{
                                     fontSize: "11px",
-                                    color: "#16A34A",
-                                    fontWeight: 700,
+                                    color: (d as any).noteDone
+                                      ? "#16A34A"
+                                      : "#9CA3AF",
                                   }}
                                 >
-                                  ✓ Шилжүүлсэн
+                                  {(d as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
                                 </Typography>
-                              )}
+                              </Box>
                             </Box>
                           ))}
                         </Box>
@@ -738,6 +862,26 @@ export default function OrdersPage() {
                           >
                             {order.paid ? "Төлсөн" : "Төлөөгүй"}
                           </Typography>
+                          <Input
+                            placeholder="Тайлбар..."
+                            size="sm"
+                            value={(order as any).note ?? ""}
+                            onChange={(e) => {
+                              setOrders((prev) =>
+                                prev.map((o) =>
+                                  String(o._id) === String(order._id)
+                                    ? { ...o, note: e.target.value }
+                                    : o,
+                                ),
+                              );
+                            }}
+                            onBlur={async (e) => {
+                              await updateOrder(String(order._id), {
+                                note: e.target.value,
+                              } as any);
+                            }}
+                            sx={{ fontSize: "11px", height: 26, width: 150 }}
+                          />
                           {(order as any).orderType && (
                             <Box
                               sx={{
@@ -774,7 +918,7 @@ export default function OrdersPage() {
                             <Select
                               size="sm"
                               value={order.status}
-                              // disabled={allTransferred}
+                              disabled={allTransferred}
                               onChange={(_, val) => {
                                 if (val)
                                   handleStatusChange(
@@ -786,7 +930,7 @@ export default function OrdersPage() {
                                 fontSize: "13px",
                                 fontWeight: 500,
                                 width: "100%",
-                                // opacity: allTransferred ? 0.5 : 1,
+                                opacity: allTransferred ? 0.5 : 1,
                               }}
                             >
                               {STATUSES.map((s) => (
@@ -796,7 +940,6 @@ export default function OrdersPage() {
                               ))}
                             </Select>
                           </Box>
-
                           <Typography
                             sx={{
                               fontSize: "12px",
@@ -808,7 +951,26 @@ export default function OrdersPage() {
                           >
                             {order.paid ? "Төлсөн" : "Төлөөгүй"}
                           </Typography>
-
+                          <Input
+                            placeholder="Тайлбар..."
+                            size="sm"
+                            value={(order as any).note ?? ""}
+                            onChange={(e) => {
+                              setOrders((prev) =>
+                                prev.map((o) =>
+                                  String(o._id) === String(order._id)
+                                    ? { ...o, note: e.target.value }
+                                    : o,
+                                ),
+                              );
+                            }}
+                            onBlur={async (e) => {
+                              await updateOrder(String(order._id), {
+                                note: e.target.value,
+                              } as any);
+                            }}
+                            sx={{ fontSize: "11px", height: 26, width: 150 }}
+                          />
                           <Box
                             sx={{
                               display: "flex",
@@ -829,33 +991,33 @@ export default function OrdersPage() {
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
-                            {(order as any).orderType && (
-                              <Box
-                                sx={{
-                                  px: 1.5,
-                                  py: 0.5,
-                                  borderRadius: "8px",
-                                  fontSize: "11px",
-                                  fontWeight: 700,
-                                  whiteSpace: "nowrap",
-                                  width: 160,
-                                  textAlign: "center",
-                                  background:
-                                    (order as any).orderType === "sales"
-                                      ? "#DCFCE7"
-                                      : "#DBEAFE",
-                                  color:
-                                    (order as any).orderType === "sales"
-                                      ? "#16A34A"
-                                      : "#1D4ED8",
-                                }}
-                              >
-                                {(order as any).orderType === "sales"
-                                  ? "Борлуулалт"
-                                  : "Маркетинг, үйл ажиллагаа"}
-                              </Box>
-                            )}
                           </Box>
+                          {(order as any).orderType && (
+                            <Box
+                              sx={{
+                                px: 1.5,
+                                py: 0.5,
+                                borderRadius: "8px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                                width: 160,
+                                textAlign: "center",
+                                background:
+                                  (order as any).orderType === "sales"
+                                    ? "#DCFCE7"
+                                    : "#DBEAFE",
+                                color:
+                                  (order as any).orderType === "sales"
+                                    ? "#16A34A"
+                                    : "#1D4ED8",
+                              }}
+                            >
+                              {(order as any).orderType === "sales"
+                                ? "Борлуулалт"
+                                : "Маркетинг, үйл ажиллагаа"}
+                            </Box>
+                          )}
                         </>
                       )}
                     </Box>
@@ -1034,7 +1196,7 @@ export default function OrdersPage() {
         </Sheet>
       </Modal>
 
-      {/* Custom Confirm Modal */}
+      {/* Confirm Modal */}
       <Modal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}

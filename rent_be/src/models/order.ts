@@ -46,7 +46,7 @@ const OrderSchema = new Schema<IOrder>(
          transferredAt: { type: String, default: "" }, 
          regno: { type: String, default: "" },  
          paymentRef: { type: String, default: "" }, 
-         note: { type: String, default: "" },
+         note: { type: String, default: "" },   
       },
     ],
   },

@@ -9,6 +9,8 @@ export type DriverRow = {
   regno?: string;
   orderType?: "sales" | "operations";
   paymentRef?: string;
+    note?: string;   
+  noteDone?: boolean;
 };
 
 export type Order = {
@@ -22,6 +24,7 @@ export type Order = {
   managerId: number;
   managerName: string;
   drivers: DriverRow[];
+  note?: string;
 };
 
 // GET
