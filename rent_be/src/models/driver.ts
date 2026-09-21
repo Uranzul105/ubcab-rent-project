@@ -3,7 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IDriver extends Document {
   phone: string;
   name: string;
-  regno: string;
+  regno: string
+  driverId?: string;
 }
 
 const DriverSchema = new Schema<IDriver>(
@@ -11,6 +12,7 @@ const DriverSchema = new Schema<IDriver>(
     phone: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     regno: { type: String, default: "" },
+     driverId: { type: String, default: "" },
   },
   { timestamps: true }
 );

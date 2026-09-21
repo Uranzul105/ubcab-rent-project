@@ -28,7 +28,12 @@ export default function DriversPage() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editDriver, setEditDriver] = useState<Driver | null>(null);
-  const [form, setForm] = useState({ phone: "", name: "", regno: "" });
+  const [form, setForm] = useState({
+    phone: "",
+    name: "",
+    regno: "",
+    driverId: "",
+  });
   const [page, setPage] = useState(1);
   const PER = 15;
 
@@ -62,7 +67,7 @@ export default function DriversPage() {
 
   const openCreate = () => {
     setEditDriver(null);
-    setForm({ phone: "", name: "", regno: "" });
+    setForm({ phone: "", name: "", regno: "", driverId: "" });
     setModalOpen(true);
   };
 
@@ -72,6 +77,7 @@ export default function DriversPage() {
       phone: driver.phone,
       name: driver.name,
       regno: driver.regno ?? "",
+      driverId: driver.driverId ?? "",
     });
     setModalOpen(true);
   };
@@ -79,7 +85,7 @@ export default function DriversPage() {
   const closeModal = () => {
     setModalOpen(false);
     setEditDriver(null);
-    setForm({ phone: "", name: "", regno: "" });
+    setForm({ phone: "", name: "", regno: "", driverId: "" });
   };
 
   const handleSave = async () => {
@@ -191,7 +197,7 @@ export default function DriversPage() {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "60px 1fr 1fr 1fr 100px",
+                  gridTemplateColumns: "60px 1fr 1fr 1fr 100px 100px",
                   gap: 2,
                   px: 2,
                   py: 1,
@@ -200,19 +206,21 @@ export default function DriversPage() {
                   mb: 1,
                 }}
               >
-                {["#", "Утасны дугаар", "Нэр", "Регистр", "Үйлдэл"].map((h) => (
-                  <Typography
-                    key={h}
-                    sx={{
-                      fontSize: "11px",
-                      fontWeight: 800,
-                      color: "#999",
-                      letterSpacing: 0.8,
-                    }}
-                  >
-                    {h}
-                  </Typography>
-                ))}
+                {["#", "Утасны дугаар", "Нэр", "Регистр", "ID", "Үйлдэл"].map(
+                  (h) => (
+                    <Typography
+                      key={h}
+                      sx={{
+                        fontSize: "11px",
+                        fontWeight: 800,
+                        color: "#999",
+                        letterSpacing: 0.8,
+                      }}
+                    >
+                      {h}
+                    </Typography>
+                  ),
+                )}
               </Box>
 
               {/* Мөрүүд */}
@@ -222,7 +230,7 @@ export default function DriversPage() {
                     key={String(d._id)}
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "60px 1fr 1fr 1fr 100px",
+                      gridTemplateColumns: "60px 1fr 1fr 1fr 100px 100px",
                       gap: 2,
                       px: 2,
                       py: 1.5,
@@ -250,6 +258,9 @@ export default function DriversPage() {
                     </Typography>
                     <Typography sx={{ fontSize: "13px", color: "#888" }}>
                       {d.regno || "—"}
+                    </Typography>
+                    <Typography sx={{ fontSize: "13px", color: "#888" }}>
+                      {d.driverId || "—"}
                     </Typography>
                     <Box sx={{ display: "flex", gap: 0.5 }}>
                       <IconButton
@@ -401,6 +412,26 @@ export default function DriversPage() {
                 value={form.regno ?? ""}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, regno: e.target.value }))
+                }
+                sx={{ fontSize: "14px" }}
+              />
+            </Box>
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#999",
+                  mb: 0.5,
+                }}
+              >
+                ID
+              </Typography>
+              <Input
+                placeholder="Жолоочийн ID"
+                value={form.driverId ?? ""}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, driverId: e.target.value }))
                 }
                 sx={{ fontSize: "14px" }}
               />

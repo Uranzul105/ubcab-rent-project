@@ -394,6 +394,30 @@ export default function OrdersPage() {
                   ✓ НӨАТ шивсэн ({selectedOrders.size})
                 </Button>
               )}
+              {/* {selectedOrders.size > 0 && user?.role === "admin" && (
+                <Button
+                  onClick={async () => {
+                    for (const id of selectedOrders) {
+                      await updateOrder(id, { paid: true } as any);
+                      setOrders((prev) =>
+                        prev.map((o) =>
+                          String(o._id) === id ? { ...o, paid: true } : o,
+                        ),
+                      );
+                    }
+                    setSelectedOrders(new Set());
+                  }}
+                  sx={{
+                    backgroundColor: "#2563EB",
+                    color: "#fff",
+                    borderRadius: "40px",
+                    fontWeight: 700,
+                    "&:hover": { backgroundColor: "#1D4ED8" },
+                  }}
+                >
+                  💰 Төлсөн болгох ({selectedOrders.size})
+                </Button>
+              )} */}
               <Button
                 onClick={handleExport}
                 variant="outlined"

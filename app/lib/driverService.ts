@@ -6,6 +6,7 @@ export type Driver = {
   phone: string;
   name: string;
   regno: string; 
+  driverId?: string;
 };
 
 // GET
