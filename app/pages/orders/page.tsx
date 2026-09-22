@@ -394,7 +394,7 @@ export default function OrdersPage() {
                   ✓ НӨАТ шивсэн ({selectedOrders.size})
                 </Button>
               )}
-              {/* {selectedOrders.size > 0 && user?.role === "admin" && (
+              {selectedOrders.size > 0 && user?.role === "admin" && (
                 <Button
                   onClick={async () => {
                     for (const id of selectedOrders) {
@@ -417,7 +417,7 @@ export default function OrdersPage() {
                 >
                   💰 Төлсөн болгох ({selectedOrders.size})
                 </Button>
-              )} */}
+              )}
               <Button
                 onClick={handleExport}
                 variant="outlined"

@@ -135,6 +135,7 @@ type DriverEntry = {
   transferred: boolean;
   transferredAt?: string;
   regno: string;
+  driverId?: string;
   paymentRef?: string;
   note?: string;
 };
@@ -210,6 +211,7 @@ export default function ReportPage() {
           fuel: d.fuel ?? 0,
           transferred: d.transferred ?? false,
           transferredAt: (d as any).transferredAt ?? "",
+          driverId: (d as any).driverId ?? "",
           regno: d.regno ?? "",
           paymentRef: (d as any).paymentRef ?? "",
           note: (d as any).note ?? "",
@@ -319,6 +321,7 @@ export default function ReportPage() {
       [
         "#",
         "Огноо",
+        "ID",
         "Утас",
         "Регистр",
         "Жолоочийн нэр",
@@ -334,6 +337,7 @@ export default function ReportPage() {
       ...allEntries.map((d, i) => [
         i + 1,
         d.orderDate,
+        (d as any).driverId || "—",
         d.phone,
         d.regno || "—",
         d.name,
@@ -348,7 +352,7 @@ export default function ReportPage() {
       ]),
     ];
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"] = [4, 12, 12, 12, 18, 18, 12, 12, 12, 12, 12, 14, 20].map(
+    ws["!cols"] = [4, 12, 10, 12, 12, 18, 18, 12, 12, 12, 12, 12, 14, 20].map(
       (w) => ({
         wch: w,
       }),
@@ -773,7 +777,7 @@ export default function ReportPage() {
                 sx={{
                   display: "grid",
                   gridTemplateColumns:
-                    "26px 26px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px 190px",
+                    "26px 26px 80px 80px 95px 95px 170px 130px 80px 80px 90px 150px 150px",
                   gap: 1,
                   px: 1.5,
                   py: 1,
@@ -811,6 +815,7 @@ export default function ReportPage() {
                 {[
                   "#",
                   "Огноо",
+                  "ID",
                   "Утас",
                   "Регистр",
                   "Жолоочийн нэр",
@@ -874,6 +879,9 @@ export default function ReportPage() {
                     </Typography>
                     <Typography sx={{ fontSize: "12px", color: "#888" }}>
                       {entry.orderDate}
+                    </Typography>
+                    <Typography sx={{ fontSize: "12px", color: "#888" }}>
+                      {(entry as any).driverId || "—"}
                     </Typography>
                     <Typography
                       sx={{
