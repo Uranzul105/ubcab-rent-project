@@ -1042,46 +1042,6 @@ export default function OrdersPage() {
                           <Box
                             sx={{
                               display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={(order as any).noteDone ?? false}
-                              onChange={async (e) => {
-                                await updateOrder(String(order._id), {
-                                  noteDone: e.target.checked,
-                                } as any);
-                                setOrders((prev) =>
-                                  prev.map((o) =>
-                                    String(o._id) === String(order._id)
-                                      ? { ...o, noteDone: e.target.checked }
-                                      : o,
-                                  ),
-                                );
-                              }}
-                              style={{
-                                cursor: "pointer",
-                                accentColor: "#16A34A",
-                                width: 14,
-                                height: 14,
-                              }}
-                            />
-                            <Typography
-                              sx={{
-                                fontSize: "11px",
-                                color: (order as any).noteDone
-                                  ? "#16A34A"
-                                  : "#9CA3AF",
-                              }}
-                            >
-                              {(order as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
-                            </Typography>
-                          </Box>
-                          <Box
-                            sx={{
-                              display: "flex",
                               gap: 0.5,
                               alignItems: "center",
                             }}
