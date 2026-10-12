@@ -20,6 +20,7 @@ type DriverRow = {
   fuelToggle?: boolean;
   fuel?: number;
   regno?: string;
+  driverId?: string;
 };
 
 type OrderData = {
@@ -76,7 +77,7 @@ export default function OrderCard({
   }, []);
 
   const [allDrivers, setAllDrivers] = useState<
-    { phone: string; name: string; regno?: string }[]
+    { phone: string; name: string; regno?: string; driverId?: string }[]
   >([]);
 
   useEffect(() => {
@@ -125,6 +126,7 @@ export default function OrderCard({
       phone,
       name: found?.name ?? updated[index].name,
       regno: found?.regno ?? updated[index].regno ?? "",
+      driverId: found?.driverId ?? updated[index].driverId ?? "",
     };
     setDriverRows(updated);
   };
@@ -191,6 +193,7 @@ export default function OrderCard({
         salary: d.salary ?? 0,
         fuel: d.fuel ?? 0,
         regno: d.regno ?? "",
+        driverId: d.driverId ?? "",
       })),
       orderType,
     } as any);
@@ -397,6 +400,7 @@ export default function OrderCard({
                         name: found.name,
                         phone: found.phone,
                         regno: found.regno ?? "",
+                        driverId: found.driverId ?? "",
                       };
                       setDriverRows(updated);
                     } else {
