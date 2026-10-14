@@ -1246,7 +1246,7 @@ export default function CompanyPage() {
           totalFuel,
         };
       })
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => b.unpaid - a.unpaid);
   }, [companies, filteredOrders, search]);
 
   const footerTotal = companyGroups.reduce((s, g) => s + g.total, 0);

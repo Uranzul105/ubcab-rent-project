@@ -74,15 +74,14 @@ export default function OrdersPage() {
   const [filterTransferred, setFilterTransferred] = useState<
     "all" | "transferred" | "pending"
   >("all");
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
-  // Custom confirm modal
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
   const [confirmVariant, setConfirmVariant] = useState<"danger" | "success">(
     "danger",
   );
-  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
 
   const showConfirm = (
     message: string,
@@ -154,7 +153,10 @@ export default function OrdersPage() {
     (page - 1) * PER_PAGE,
     page * PER_PAGE,
   );
-  const resetPage = () => setPage(1);
+  const resetPage = () => {
+    setPage(1);
+    setSelectedOrders(new Set());
+  };
 
   const openCreate = () => {
     setEditOrder(null);
@@ -229,16 +231,6 @@ export default function OrdersPage() {
         });
       },
       "danger",
-    );
-  };
-
-  const handleSendToFinance = (orderId: string) => {
-    showConfirm(
-      "Тайлан рүү шилжүүлэх үү?",
-      () => {
-        window.location.href = `/pages/report?ids=${orderId}`;
-      },
-      "success",
     );
   };
 
@@ -320,9 +312,11 @@ export default function OrdersPage() {
     .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
   const totalUnpaid = totalAmount - totalPaid;
 
-  const canSend = (status: string) => status === "active" || status === "done";
-
   const SEL = { fontSize: "13px", height: 36 };
+
+  const isAdmin = user?.role === "admin";
+  const isViewer = user?.role === "viewer";
+  const isManager = user?.role === "manager";
 
   return (
     <div
@@ -370,7 +364,7 @@ export default function OrdersPage() {
               </Typography>
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
-              {selectedOrders.size > 0 && user?.role === "admin" && (
+              {selectedOrders.size > 0 && isAdmin && (
                 <Button
                   onClick={async () => {
                     for (const id of selectedOrders) {
@@ -394,7 +388,7 @@ export default function OrdersPage() {
                   ✓ НӨАТ шивсэн ({selectedOrders.size})
                 </Button>
               )}
-              {selectedOrders.size > 0 && user?.role === "admin" && (
+              {selectedOrders.size > 0 && isAdmin && (
                 <Button
                   onClick={async () => {
                     for (const id of selectedOrders) {
@@ -426,7 +420,7 @@ export default function OrdersPage() {
               >
                 Excel
               </Button>
-              {user?.role !== "admin" && (
+              {isManager && (
                 <Button
                   onClick={openCreate}
                   startDecorator={<AddIcon />}
@@ -442,36 +436,6 @@ export default function OrdersPage() {
                 </Button>
               )}
             </Box>
-          </Box>
-
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <input
-              type="checkbox"
-              checked={
-                selectedOrders.size === filteredOrders.length &&
-                filteredOrders.length > 0
-              }
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedOrders(
-                    new Set(filteredOrders.map((o) => String(o._id))),
-                  );
-                } else {
-                  setSelectedOrders(new Set());
-                }
-              }}
-              style={{
-                cursor: "pointer",
-                accentColor: "#facc15",
-                width: 14,
-                height: 14,
-              }}
-            />
-            <Typography sx={{ fontSize: "12px", color: "#888" }}>
-              {selectedOrders.size > 0
-                ? `${selectedOrders.size} захиалга сонгогдсон`
-                : "Бүгдийг сонгох"}
-            </Typography>
           </Box>
 
           {/* 2-р мөр */}
@@ -656,6 +620,39 @@ export default function OrdersPage() {
             )}
           </Box>
 
+          {/* Бүгдийг сонгох */}
+          {filteredOrders.length > 0 && isAdmin && (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <input
+                type="checkbox"
+                checked={
+                  selectedOrders.size === filteredOrders.length &&
+                  filteredOrders.length > 0
+                }
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedOrders(
+                      new Set(filteredOrders.map((o) => String(o._id))),
+                    );
+                  } else {
+                    setSelectedOrders(new Set());
+                  }
+                }}
+                style={{
+                  cursor: "pointer",
+                  accentColor: "#facc15",
+                  width: 14,
+                  height: 14,
+                }}
+              />
+              <Typography sx={{ fontSize: "12px", color: "#888" }}>
+                {selectedOrders.size > 0
+                  ? `${selectedOrders.size} захиалга сонгогдсон`
+                  : "Бүгдийг сонгох"}
+              </Typography>
+            </Box>
+          )}
+
           {loading ? (
             <Box sx={{ textAlign: "center", padding: "40px", color: "#aaa" }}>
               <Typography>Уншиж байна...</Typography>
@@ -698,26 +695,28 @@ export default function OrdersPage() {
                         gap: 2,
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedOrders.has(String(order._id))}
-                        onChange={(e) => {
-                          setSelectedOrders((prev) => {
-                            const next = new Set(prev);
-                            e.target.checked
-                              ? next.add(String(order._id))
-                              : next.delete(String(order._id));
-                            return next;
-                          });
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          accentColor: "#facc15",
-                          width: 14,
-                          height: 14,
-                        }}
-                      />
-
+                      {isAdmin && (
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.has(String(order._id))}
+                          onChange={(e) => {
+                            setSelectedOrders((prev) => {
+                              const next = new Set(prev);
+                              e.target.checked
+                                ? next.add(String(order._id))
+                                : next.delete(String(order._id));
+                              return next;
+                            });
+                          }}
+                          style={{
+                            cursor: "pointer",
+                            accentColor: "#facc15",
+                            width: 14,
+                            height: 14,
+                            marginTop: 4,
+                          }}
+                        />
+                      )}
                       <Typography
                         sx={{
                           fontSize: "12px",
@@ -730,13 +729,11 @@ export default function OrdersPage() {
                       </Typography>
 
                       <Box sx={{ flex: 1 }}>
-                        {/* 1-р мөр: Огноо + Менежер */}
                         <Typography
                           sx={{ fontSize: "12px", color: "#bbb", mb: 0.3 }}
                         >
                           {order.date} · 👤 {order.managerName}
                         </Typography>
-                        {/* 2-р мөр: Нэр + Төлөв */}
                         <Box
                           sx={{
                             display: "flex",
@@ -756,7 +753,6 @@ export default function OrdersPage() {
                           </Typography>
                           <StatusBadge status={order.status} />
                         </Box>
-                        {/* 3-р мөр: Жолооч */}
                         <Box
                           sx={{
                             display: "flex",
@@ -769,46 +765,33 @@ export default function OrdersPage() {
                               key={i}
                               sx={{
                                 display: "flex",
-                                flexDirection: "column",
-                                gap: 0.3,
+                                alignItems: "center",
+                                gap: 1,
+                                flexWrap: "wrap",
                               }}
                             >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  flexWrap: "wrap",
-                                }}
+                              <Typography
+                                sx={{ fontSize: "12px", color: "#999" }}
                               >
-                                <Typography
-                                  sx={{ fontSize: "12px", color: "#999" }}
-                                >
-                                  🚗 {d.name} — цалин:{" "}
-                                  {(d.salary ?? 0).toLocaleString()}₮
-                                  {(d.fuel ?? 0) > 0 && (
-                                    <span
-                                      style={{ color: "#D97706" }}
-                                    >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
-                                  )}
-                                  {((d as any).advanceSalary ?? 0) > 0 && (
-                                    <span
-                                      style={{ color: "#7C3AED" }}
-                                    >{` 💰 ${((d as any).advanceSalary ?? 0).toLocaleString()}₮`}</span>
-                                  )}
-                                </Typography>
-                                {d.transferred && (
-                                  <Typography
-                                    sx={{
-                                      fontSize: "11px",
-                                      color: "#16A34A",
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    ✓ Шилжүүлсэн
-                                  </Typography>
+                                🚗 {d.name} — цалин:{" "}
+                                {(d.salary ?? 0).toLocaleString()}₮
+                                {(d.fuel ?? 0) > 0 && (
+                                  <span
+                                    style={{ color: "#D97706" }}
+                                  >{` ⛽ ${(d.fuel ?? 0).toLocaleString()}₮`}</span>
                                 )}
-                              </Box>
+                              </Typography>
+                              {d.transferred && (
+                                <Typography
+                                  sx={{
+                                    fontSize: "11px",
+                                    color: "#16A34A",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  ✓ Шилжүүлсэн
+                                </Typography>
+                              )}
                             </Box>
                           ))}
                         </Box>
@@ -835,12 +818,15 @@ export default function OrdersPage() {
                         </Typography>
                       </Box>
 
-                      {user?.role === "admin" ? (
+                      {/* Admin болон Viewer хэсэг */}
+                      {isAdmin || isViewer ? (
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
                           <div
-                            onClick={() => handleTogglePaid(String(order._id))}
+                            onClick={() =>
+                              isAdmin && handleTogglePaid(String(order._id))
+                            }
                             style={{
                               width: 36,
                               height: 20,
@@ -848,7 +834,7 @@ export default function OrdersPage() {
                               background: order.paid ? "#16A34A" : "#D1D5DB",
                               position: "relative",
                               transition: "background .2s",
-                              cursor: "pointer",
+                              cursor: isAdmin ? "pointer" : "default",
                               flexShrink: 0,
                             }}
                           >
@@ -876,69 +862,122 @@ export default function OrdersPage() {
                           >
                             {order.paid ? "Төлсөн" : "Төлөөгүй"}
                           </Typography>
-                          <Input
-                            placeholder="Тайлбар..."
-                            size="sm"
-                            value={(order as any).note ?? ""}
-                            onChange={(e) => {
-                              setOrders((prev) =>
-                                prev.map((o) =>
-                                  String(o._id) === String(order._id)
-                                    ? { ...o, note: e.target.value }
-                                    : o,
-                                ),
-                              );
-                            }}
-                            onBlur={async (e) => {
-                              await updateOrder(String(order._id), {
-                                note: e.target.value,
-                              } as any);
-                            }}
-                            sx={{ fontSize: "11px", height: 26, width: 150 }}
-                          />
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={(order as any).noteDone ?? false}
-                              onChange={async (e) => {
-                                // Эхлээд UI шинэчилнэ
-                                setOrders((prev) =>
-                                  prev.map((o) =>
-                                    String(o._id) === String(order._id)
-                                      ? { ...o, noteDone: e.target.checked }
-                                      : o,
-                                  ),
-                                );
-                                // Дараа нь backend-д хадгална
-                                await updateOrder(String(order._id), {
-                                  noteDone: e.target.checked,
-                                } as any);
-                              }}
-                              style={{
-                                cursor: "pointer",
-                                accentColor: "#16A34A",
-                                width: 14,
-                                height: 14,
-                              }}
-                            />
+                          {isAdmin ? (
+                            <>
+                              <Input
+                                placeholder="Тайлбар..."
+                                size="sm"
+                                value={(order as any).note ?? ""}
+                                onChange={(e) => {
+                                  setOrders((prev) =>
+                                    prev.map((o) =>
+                                      String(o._id) === String(order._id)
+                                        ? { ...o, note: e.target.value }
+                                        : o,
+                                    ),
+                                  );
+                                }}
+                                onBlur={async (e) => {
+                                  await updateOrder(String(order._id), {
+                                    note: e.target.value,
+                                  } as any);
+                                }}
+                                sx={{
+                                  fontSize: "11px",
+                                  height: 26,
+                                  width: 100,
+                                }}
+                              />
+                              <Input
+                                type="date"
+                                size="sm"
+                                value={(order as any).noteDate ?? ""}
+                                onChange={(e) => {
+                                  setOrders((prev) =>
+                                    prev.map((o) =>
+                                      String(o._id) === String(order._id)
+                                        ? { ...o, noteDate: e.target.value }
+                                        : o,
+                                    ),
+                                  );
+                                }}
+                                onBlur={async (e) => {
+                                  await updateOrder(String(order._id), {
+                                    noteDate: e.target.value,
+                                  } as any);
+                                }}
+                                sx={{
+                                  fontSize: "11px",
+                                  height: 26,
+                                  width: 130,
+                                }}
+                              />
+                            </>
+                          ) : (
                             <Typography
                               sx={{
                                 fontSize: "11px",
-                                color: (order as any).noteDone
-                                  ? "#16A34A"
-                                  : "#9CA3AF",
+                                color: "#888",
+                                width: 150,
                               }}
                             >
-                              {(order as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
+                              {(order as any).note || ""}
                             </Typography>
-                          </Box>
-
+                          )}
+                          {isAdmin ? (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={(order as any).noteDone ?? false}
+                                onChange={async (e) => {
+                                  setOrders((prev) =>
+                                    prev.map((o) =>
+                                      String(o._id) === String(order._id)
+                                        ? { ...o, noteDone: e.target.checked }
+                                        : o,
+                                    ),
+                                  );
+                                  await updateOrder(String(order._id), {
+                                    noteDone: e.target.checked,
+                                  } as any);
+                                }}
+                                style={{
+                                  cursor: "pointer",
+                                  accentColor: "#16A34A",
+                                  width: 14,
+                                  height: 14,
+                                }}
+                              />
+                              <Typography
+                                sx={{
+                                  fontSize: "11px",
+                                  color: (order as any).noteDone
+                                    ? "#16A34A"
+                                    : "#9CA3AF",
+                                }}
+                              >
+                                {(order as any).noteDone ? "✓ НӨАТ" : "НӨАТ"}
+                              </Typography>
+                            </Box>
+                          ) : (
+                            (order as any).noteDone && (
+                              <Typography
+                                sx={{
+                                  fontSize: "11px",
+                                  color: "#16A34A",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                ✓ НӨАТ
+                              </Typography>
+                            )
+                          )}
                           {(order as any).orderType && (
                             <Box
                               sx={{
@@ -967,6 +1006,7 @@ export default function OrdersPage() {
                           )}
                         </Box>
                       ) : (
+                        /* Менежерийн хэсэг */
                         <>
                           <Box
                             sx={{ width: 150, flexShrink: 0 }}
@@ -1026,7 +1066,27 @@ export default function OrdersPage() {
                                 note: e.target.value,
                               } as any);
                             }}
-                            sx={{ fontSize: "11px", height: 26, width: 150 }}
+                            sx={{ fontSize: "11px", height: 26, width: 100 }} // ← width багасгана
+                          />
+                          <Input
+                            type="date"
+                            size="sm"
+                            value={(order as any).noteDate ?? ""}
+                            onChange={(e) => {
+                              setOrders((prev) =>
+                                prev.map((o) =>
+                                  String(o._id) === String(order._id)
+                                    ? { ...o, noteDate: e.target.value }
+                                    : o,
+                                ),
+                              );
+                            }}
+                            onBlur={async (e) => {
+                              await updateOrder(String(order._id), {
+                                noteDate: e.target.value,
+                              } as any);
+                            }}
+                            sx={{ fontSize: "11px", height: 26, width: 130 }}
                           />
                           {(order as any).noteDone && (
                             <Typography
@@ -1107,7 +1167,10 @@ export default function OrdersPage() {
                     variant="outlined"
                     color="neutral"
                     disabled={page === 1}
-                    onClick={() => setPage((p) => p - 1)}
+                    onClick={() => {
+                      setPage((p) => p - 1);
+                      setSelectedOrders(new Set());
+                    }}
                     sx={{ minWidth: 36, borderRadius: "8px" }}
                   >
                     ‹
@@ -1136,7 +1199,10 @@ export default function OrdersPage() {
                           size="sm"
                           variant={page === p ? "solid" : "outlined"}
                           color="neutral"
-                          onClick={() => setPage(p)}
+                          onClick={() => {
+                            setPage(p);
+                            setSelectedOrders(new Set());
+                          }}
                           sx={{
                             minWidth: 36,
                             borderRadius: "8px",
@@ -1156,7 +1222,10 @@ export default function OrdersPage() {
                     variant="outlined"
                     color="neutral"
                     disabled={page === totalPages}
-                    onClick={() => setPage((p) => p + 1)}
+                    onClick={() => {
+                      setPage((p) => p + 1);
+                      setSelectedOrders(new Set());
+                    }}
                     sx={{ minWidth: 36, borderRadius: "8px" }}
                   >
                     ›

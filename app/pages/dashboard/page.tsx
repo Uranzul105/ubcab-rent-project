@@ -4,16 +4,41 @@ import { useEffect, useState, useMemo } from "react";
 import Box from "@mui/joy/Box";
 import Typography from "@mui/joy/Typography";
 import Input from "@mui/joy/Input";
+import Select from "@mui/joy/Select";
+import Option from "@mui/joy/Option";
 import Header from "@/app/components/Header";
 import { getOrders, Order, DriverRow } from "@/app/lib/orderService";
 import { getDrivers, Driver } from "@/app/lib/driverService";
 import SearchIcon from "@mui/icons-material/Search";
+
+const MONTHS = [
+  "1-р сар",
+  "2-р сар",
+  "3-р сар",
+  "4-р сар",
+  "5-р сар",
+  "6-р сар",
+  "7-р сар",
+  "8-р сар",
+  "9-р сар",
+  "10-р сар",
+  "11-р сар",
+  "12-р сар",
+];
+
+const AITO_MONTHLY = 32_560_000;
+const AITO_START_YEAR = 2026;
+const AITO_START_MONTH = 5;
 
 export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  const now = new Date();
+  const [filterYear, setFilterYear] = useState(now.getFullYear());
+  const [filterMonth, setFilterMonth] = useState<number | "all">("all");
 
   useEffect(() => {
     Promise.all([getOrders(), getDrivers()])
@@ -24,7 +49,103 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Захиалга хийсэн жолоочийн утасны дугаарууд
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      if (o.status === "cancelled") return false;
+      const d = new Date(o.date);
+      const matchYear = d.getFullYear() === filterYear;
+      const matchMonth =
+        filterMonth === "all" ? true : d.getMonth() + 1 === filterMonth;
+      return matchYear && matchMonth;
+    });
+  }, [orders, filterYear, filterMonth]);
+
+  const totalRevenue = useMemo(
+    () => filteredOrders.reduce((s, o) => s + (o.totalAmount ?? 0), 0),
+    [filteredOrders],
+  );
+
+  const marketingRevenue = useMemo(
+    () =>
+      filteredOrders
+        .filter((o) => (o as any).orderType === "operations")
+        .reduce((s, o) => s + (o.totalAmount ?? 0), 0),
+    [filteredOrders],
+  );
+
+  const aitoAmount = useMemo(() => {
+    if (filterMonth === "all") {
+      let total = 0;
+      for (let m = 1; m <= 12; m++) {
+        if (
+          filterYear > AITO_START_YEAR ||
+          (filterYear === AITO_START_YEAR && m >= AITO_START_MONTH)
+        ) {
+          total += AITO_MONTHLY;
+        }
+      }
+      return total;
+    } else {
+      if (
+        filterYear > AITO_START_YEAR ||
+        (filterYear === AITO_START_YEAR && filterMonth >= AITO_START_MONTH)
+      ) {
+        return AITO_MONTHLY;
+      }
+      return 0;
+    }
+  }, [filterYear, filterMonth]);
+
+  const rentRevenue = totalRevenue - marketingRevenue - aitoAmount;
+
+  const totalSalary = useMemo(
+    () =>
+      filteredOrders.reduce(
+        (s, o) =>
+          s +
+          (o.drivers ?? []).reduce(
+            (ss, d: DriverRow) => ss + (d.salary ?? 0) + (d.fuel ?? 0),
+            0,
+          ),
+        0,
+      ),
+    [filteredOrders],
+  );
+
+  const marketingSalary = useMemo(
+    () =>
+      filteredOrders
+        .filter((o) => (o as any).orderType === "operations")
+        .reduce(
+          (s, o) =>
+            s +
+            (o.drivers ?? []).reduce(
+              (ss, d: DriverRow) => ss + (d.salary ?? 0) + (d.fuel ?? 0),
+              0,
+            ),
+          0,
+        ),
+    [filteredOrders],
+  );
+
+  const rentSalary = totalSalary - marketingSalary;
+  const profit = rentRevenue - rentSalary;
+  const profitRate = rentRevenue > 0 ? (profit / rentRevenue) * 100 : 0;
+
+  const totalPaid = filteredOrders
+    .filter((o) => o.paid)
+    .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+  const totalUnpaid = totalRevenue - totalPaid;
+
+  const transferred = filteredOrders
+    .flatMap((o) => o.drivers ?? [])
+    .filter((d) => d.transferred)
+    .reduce((s, d: DriverRow) => s + (d.salary ?? 0) + (d.fuel ?? 0), 0);
+  const pending = filteredOrders
+    .flatMap((o) => o.drivers ?? [])
+    .filter((d) => !d.transferred)
+    .reduce((s, d: DriverRow) => s + (d.salary ?? 0) + (d.fuel ?? 0), 0);
+
   const activePhones = useMemo(() => {
     const phones = new Set<string>();
     orders.forEach((o) =>
@@ -35,35 +156,21 @@ export default function DashboardPage() {
     return phones;
   }, [orders]);
 
-  // Нийтдээ захиалга байгаагүй жолоочид
-  const inactiveDrivers = useMemo(() => {
-    return drivers.filter((d) => !activePhones.has(d.phone.replace(/\D/g, "")));
-  }, [drivers, activePhones]);
+  const inactiveDrivers = useMemo(
+    () => drivers.filter((d) => !activePhones.has(d.phone.replace(/\D/g, ""))),
+    [drivers, activePhones],
+  );
 
-  // Хамгийн олон захиалга хийсэн жолоочид
   const driverStats = useMemo(() => {
     const map: Record<
       string,
-      {
-        name: string;
-        phone: string;
-        regno: string;
-        count: number;
-        totalSalary: number;
-      }
+      { name: string; phone: string; count: number; totalSalary: number }
     > = {};
     orders.forEach((o) => {
       (o.drivers ?? []).forEach((d: DriverRow) => {
         const key = d.phone?.replace(/\D/g, "") || d.name;
-        if (!map[key]) {
-          map[key] = {
-            name: d.name,
-            phone: d.phone,
-            regno: (d as any).regno ?? "",
-            count: 0,
-            totalSalary: 0,
-          };
-        }
+        if (!map[key])
+          map[key] = { name: d.name, phone: d.phone, count: 0, totalSalary: 0 };
         map[key].count += 1;
         map[key].totalSalary += d.salary ?? 0;
       });
@@ -73,112 +180,33 @@ export default function DashboardPage() {
       .slice(0, 10);
   }, [orders]);
 
-  // Орлого зардлын мэдээлэл
-  const financials = useMemo(() => {
-    const activeOrders = orders.filter((o) => o.status !== "cancelled");
-    const totalRevenue = activeOrders.reduce(
-      (s, o) => s + (o.totalAmount ?? 0),
-      0,
-    );
-    const totalSalary = activeOrders.reduce(
-      (s, o) =>
-        s +
-        (o.drivers ?? []).reduce((ss, d: DriverRow) => ss + (d.salary ?? 0), 0),
-      0,
-    );
-    const totalFuel = activeOrders.reduce(
-      (s, o) =>
-        s +
-        (o.drivers ?? []).reduce((ss, d: DriverRow) => ss + (d.fuel ?? 0), 0),
-      0,
-    );
-    const totalPaid = activeOrders
-      .filter((o) => o.paid)
-      .reduce((s, o) => s + (o.totalAmount ?? 0), 0);
-    const totalUnpaid = totalRevenue - totalPaid;
-    const profit = totalRevenue - totalSalary - totalFuel;
-    const transferred = orders
-      .flatMap((o) => o.drivers ?? [])
-      .filter((d) => d.transferred)
-      .reduce((s, d: DriverRow) => s + (d.salary ?? 0) + (d.fuel ?? 0), 0);
-    const pending = orders
-      .flatMap((o) => o.drivers ?? [])
-      .filter((d) => !d.transferred)
-      .reduce((s, d: DriverRow) => s + (d.salary ?? 0) + (d.fuel ?? 0), 0);
-    return {
-      totalRevenue,
-      totalSalary,
-      totalFuel,
-      totalPaid,
-      totalUnpaid,
-      profit,
-      transferred,
-      pending,
-    };
-  }, [orders]);
-
   const filteredInactive = inactiveDrivers.filter(
     (d) =>
       d.name.toLowerCase().includes(search.toLowerCase()) ||
       d.phone.includes(search),
   );
 
-  const cards = [
-    {
-      label: "Нийт гүйлгээ",
-      value: financials.totalRevenue,
-      color: "#16181D",
-      bg: "#F8FAFC",
-    },
-    {
-      label: "Нийт цалин",
-      value: financials.totalSalary,
-      color: "#16A34A",
-      bg: "#F0FDF4",
-    },
-    {
-      label: "Нийт шатахуун",
-      value: financials.totalFuel,
-      color: "#D97706",
-      bg: "#FEF3C7",
-    },
-    {
-      label: "Ашиг (20%)",
-      value: financials.profit,
-      color: "#2563EB",
-      bg: "#EFF6FF",
-    },
-    {
-      label: "Төлөгдсөн",
-      value: financials.totalPaid,
-      color: "#16A34A",
-      bg: "#DCFCE7",
-    },
-    {
-      label: "Төлөгдөөгүй",
-      value: financials.totalUnpaid,
-      color: "#DC2626",
-      bg: "#FEE2E2",
-    },
-    {
-      label: "Шилжүүлсэн цалин",
-      value: financials.transferred,
-      color: "#16A34A",
-      bg: "#F0FDF4",
-    },
-    {
-      label: "Шилжүүлэх цалин",
-      value: financials.pending,
-      color: "#DC2626",
-      bg: "#FEE2E2",
-    },
-  ];
+  const SEL = { fontSize: "13px", height: 36 };
+
+  const card = (label: string, value: string, color: string, bg: string) => (
+    <Box
+      key={label}
+      sx={{ background: bg, borderRadius: "12px", padding: "14px 16px" }}
+    >
+      <Typography sx={{ fontSize: "18px", fontWeight: 700, color }}>
+        {value}
+      </Typography>
+      <Typography sx={{ fontSize: "11px", color: "#888", mt: 0.3 }}>
+        {label}
+      </Typography>
+    </Box>
+  );
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        // backgroundImage: "url('/bg.png')",
+        backgroundImage: "url('/bg.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -190,7 +218,107 @@ export default function DashboardPage() {
       </div>
 
       <Box sx={{ maxWidth: 1200, margin: "0 auto", padding: "24px" }}>
-        {/* Орлого зардлын карт */}
+        {/* Filter */}
+        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+          <Select
+            value={filterYear}
+            onChange={(_, v) => v && setFilterYear(v)}
+            sx={SEL}
+          >
+            {[2024, 2025, 2026].map((y) => (
+              <Option key={y} value={y}>
+                {y} он
+              </Option>
+            ))}
+          </Select>
+          <Select<number | "all">
+            value={filterMonth}
+            onChange={(_, v) =>
+              v !== null && setFilterMonth(v as number | "all")
+            }
+            sx={{ ...SEL, minWidth: 120 }}
+          >
+            <Option value="all">Бүх сар</Option>
+            {MONTHS.map((m, i) => (
+              <Option key={i} value={i + 1}>
+                {m}
+              </Option>
+            ))}
+          </Select>
+        </Box>
+
+        {/* Борлуулалтын задаргаа */}
+        <Box
+          sx={{
+            background: "rgba(255,255,255,0.95)",
+            borderRadius: "20px",
+            padding: "24px",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+            mb: 3,
+          }}
+        >
+          <Typography
+            sx={{ fontSize: "18px", fontWeight: 700, color: "#16181D", mb: 2 }}
+          >
+            Нийт борлуулалт
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 1.5,
+              mb: 2,
+            }}
+          >
+            {card(
+              "Нийт борлуулалт",
+              totalRevenue.toLocaleString() + "₮",
+              "#16181D",
+              "#F8FAFC",
+            )}
+            {card(
+              "Маркетинг, үйл ажиллагаа",
+              marketingRevenue.toLocaleString() + "₮",
+              "#D97706",
+              "#FEF3C7",
+            )}
+            {card(
+              "Aito M9 түрээс",
+              aitoAmount.toLocaleString() + "₮",
+              "#7C3AED",
+              "#F5F3FF",
+            )}
+          </Box>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 1.5,
+            }}
+          >
+            {card(
+              "Рент борлуулалт",
+              rentRevenue.toLocaleString() + "₮",
+              "#2563EB",
+              "#EFF6FF",
+            )}
+            {card(
+              "Рент цалин",
+              rentSalary.toLocaleString() + "₮",
+              "#16A34A",
+              "#F0FDF4",
+            )}
+            {card(
+              "Ашиг / Ашгийн хувь",
+              `${profit.toLocaleString()}₮ (${profitRate.toFixed(1)}%)`,
+              profit >= 0 ? "#16A34A" : "#DC2626",
+              profit >= 0 ? "#DCFCE7" : "#FEE2E2",
+            )}
+          </Box>
+        </Box>
+
+        {/* Орлого зардлын мэдээлэл */}
         <Box
           sx={{
             background: "rgba(255,255,255,0.95)",
@@ -209,34 +337,254 @@ export default function DashboardPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: "repeat(3, 1fr)",
               gap: 1.5,
             }}
           >
-            {cards.map((c) => (
-              <Box
-                key={c.label}
-                sx={{
-                  background: c.bg,
-                  borderRadius: "12px",
-                  padding: "14px 16px",
-                }}
-              >
-                <Typography
-                  sx={{ fontSize: "18px", fontWeight: 700, color: c.color }}
-                >
-                  {c.value.toLocaleString()}₮
-                </Typography>
-                <Typography sx={{ fontSize: "11px", color: "#888", mt: 0.3 }}>
-                  {c.label}
-                </Typography>
-              </Box>
-            ))}
+            {card(
+              "Нийт цалин",
+              totalSalary.toLocaleString() + "₮",
+              "#16181D",
+              "#F8FAFC",
+            )}
+            {card(
+              "Маркетинг цалин",
+              marketingSalary.toLocaleString() + "₮",
+              "#D97706",
+              "#FEF3C7",
+            )}
+            {card(
+              "Төлөгдсөн",
+              totalPaid.toLocaleString() + "₮",
+              "#16A34A",
+              "#DCFCE7",
+            )}
+            {card(
+              "Төлөгдөөгүй",
+              totalUnpaid.toLocaleString() + "₮",
+              "#DC2626",
+              "#FEE2E2",
+            )}
+            {card(
+              "Шилжүүлсэн цалин",
+              transferred.toLocaleString() + "₮",
+              "#16A34A",
+              "#F0FDF4",
+            )}
+            {card(
+              "Шилжүүлэх цалин",
+              pending.toLocaleString() + "₮",
+              "#DC2626",
+              "#FEE2E2",
+            )}
           </Box>
         </Box>
 
+        {/* Дебиторийн тайлан */}
+        {(() => {
+          const today = new Date();
+          // Байгууллага бүрийн нэгтгэсэн мэдээлэл
+          const companyMap: Record<
+            string,
+            {
+              name: string;
+              total: number;
+              paid: boolean;
+              lastDate: string;
+              noteDate: string;
+              unpaid: number;
+            }
+          > = {};
+
+          filteredOrders.forEach((o) => {
+            const name = o.customerName;
+            if (!companyMap[name]) {
+              companyMap[name] = {
+                name,
+                total: 0,
+                paid: true,
+                lastDate: "",
+                noteDate: "",
+                unpaid: 0,
+              };
+            }
+            companyMap[name].total += o.totalAmount ?? 0;
+            if (!o.paid) {
+              companyMap[name].paid = false;
+              companyMap[name].unpaid += o.totalAmount ?? 0;
+            }
+            if (
+              !companyMap[name].lastDate ||
+              o.date > companyMap[name].lastDate
+            ) {
+              companyMap[name].lastDate = o.date;
+            }
+            if (
+              (o as any).noteDate &&
+              (o as any).noteDate > companyMap[name].noteDate
+            ) {
+              companyMap[name].noteDate = (o as any).noteDate;
+            }
+          });
+
+          const companies = Object.values(companyMap)
+            .filter((c) => c.total > 0)
+            .sort((a, b) => b.unpaid - a.unpaid);
+
+          const getDays = (fromDate: string, toDate: string) => {
+            const from = new Date(fromDate);
+            const to = toDate ? new Date(toDate) : today;
+            return Math.floor(
+              (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24),
+            );
+          };
+
+          const getColor = (days: number, paid: boolean) => {
+            if (paid) return { bg: "#F8FAFC", border: "#E2E8F0", text: "#888" };
+            if (days <= 14)
+              return { bg: "#F0FDF4", border: "#BBF7D0", text: "#16A34A" };
+            if (days <= 90)
+              return { bg: "#FEF3C7", border: "#FDE68A", text: "#D97706" };
+            return { bg: "#FEE2E2", border: "#FECACA", text: "#DC2626" };
+          };
+
+          return (
+            <Box
+              sx={{
+                background: "rgba(255,255,255,0.95)",
+                borderRadius: "20px",
+                padding: "24px",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+                mb: 3,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  color: "#16181D",
+                  mb: 2,
+                }}
+              >
+                Төлбөрийн хугацааны тайлан
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    color: "#888",
+                    ml: 1,
+                  }}
+                >
+                  (байгууллагаар)
+                </Typography>
+              </Typography>
+
+              {/* Header */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1.5fr 120px 110px 110px 100px 80px",
+                  gap: 1,
+                  px: 1.5,
+                  py: 1,
+                  background: "#F8FAFC",
+                  borderRadius: "8px",
+                  mb: 0.5,
+                }}
+              >
+                {[
+                  "Байгууллага",
+                  "Нийт дүн",
+                  "Захиалгын огноо",
+                  "Мөнгө орсон",
+                  "Хоног",
+                  "Төлөв",
+                ].map((h) => (
+                  <Typography
+                    key={h}
+                    sx={{ fontSize: "10px", fontWeight: 800, color: "#999" }}
+                  >
+                    {h}
+                  </Typography>
+                ))}
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                {companies.map((c) => {
+                  const days = getDays(c.lastDate, c.noteDate || "");
+                  const col = getColor(days, c.paid || c.unpaid === 0);
+                  return (
+                    <Box
+                      key={c.name}
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "1.5fr 120px 110px 110px 100px 80px",
+                        gap: 1,
+                        px: 1.5,
+                        py: 1.2,
+                        borderRadius: "8px",
+                        border: `1px solid ${col.border}`,
+                        background: col.bg,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "#16181D",
+                        }}
+                      >
+                        {c.name}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#16181D",
+                        }}
+                      >
+                        {c.total.toLocaleString()}₮
+                      </Typography>
+                      <Typography sx={{ fontSize: "12px", color: "#888" }}>
+                        {c.lastDate || "—"}
+                      </Typography>
+                      <Typography sx={{ fontSize: "12px", color: "#888" }}>
+                        {c.noteDate || "—"}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: col.text,
+                        }}
+                      >
+                        {c.lastDate ? `${days} хоног` : "—"}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          color: col.text,
+                        }}
+                      >
+                        {c.paid || c.unpaid === 0
+                          ? "✓ Төлсөн"
+                          : `${c.unpaid.toLocaleString()}₮`}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          );
+        })()}
+
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}>
-          {/* Байнга давтагддаг жолоочид */}
+          {/* Топ 10 жолооч */}
           <Box
             sx={{
               background: "rgba(255,255,255,0.95)",
@@ -262,14 +610,12 @@ export default function DashboardPage() {
                 (Топ 10)
               </Typography>
             </Typography>
-
             {loading ? (
               <Typography sx={{ color: "#aaa", textAlign: "center", py: 3 }}>
                 Уншиж байна...
               </Typography>
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                {/* Header */}
                 <Box
                   sx={{
                     display: "grid",
@@ -385,7 +731,6 @@ export default function DashboardPage() {
                 ({inactiveDrivers.length} жолооч)
               </Typography>
             </Typography>
-
             <Input
               startDecorator={
                 <SearchIcon sx={{ color: "#aaa", fontSize: 18 }} />
@@ -395,7 +740,6 @@ export default function DashboardPage() {
               onChange={(e) => setSearch(e.target.value)}
               sx={{ fontSize: "13px", mb: 1.5 }}
             />
-
             {loading ? (
               <Typography sx={{ color: "#aaa", textAlign: "center", py: 3 }}>
                 Уншиж байна...
@@ -415,7 +759,6 @@ export default function DashboardPage() {
                   overflowY: "auto",
                 }}
               >
-                {/* Header */}
                 <Box
                   sx={{
                     display: "grid",
