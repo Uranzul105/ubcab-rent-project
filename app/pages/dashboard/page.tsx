@@ -29,6 +29,8 @@ const MONTHS = [
 const AITO_MONTHLY = 32_560_000;
 const AITO_START_YEAR = 2026;
 const AITO_START_MONTH = 5;
+const AITO_END_YEAR = 2026;
+const AITO_END_MONTH = 9; // 9-р сар хүртэл
 
 export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -77,19 +79,25 @@ export default function DashboardPage() {
     if (filterMonth === "all") {
       let total = 0;
       for (let m = 1; m <= 12; m++) {
-        if (
+        const afterStart =
           filterYear > AITO_START_YEAR ||
-          (filterYear === AITO_START_YEAR && m >= AITO_START_MONTH)
-        ) {
+          (filterYear === AITO_START_YEAR && m >= AITO_START_MONTH);
+        const beforeEnd =
+          filterYear < AITO_END_YEAR ||
+          (filterYear === AITO_END_YEAR && m <= AITO_END_MONTH);
+        if (afterStart && beforeEnd) {
           total += AITO_MONTHLY;
         }
       }
       return total;
     } else {
-      if (
+      const afterStart =
         filterYear > AITO_START_YEAR ||
-        (filterYear === AITO_START_YEAR && filterMonth >= AITO_START_MONTH)
-      ) {
+        (filterYear === AITO_START_YEAR && filterMonth >= AITO_START_MONTH);
+      const beforeEnd =
+        filterYear < AITO_END_YEAR ||
+        (filterYear === AITO_END_YEAR && filterMonth <= AITO_END_MONTH);
+      if (afterStart && beforeEnd) {
         return AITO_MONTHLY;
       }
       return 0;
